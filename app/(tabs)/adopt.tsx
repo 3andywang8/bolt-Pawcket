@@ -68,9 +68,16 @@ export default function AdoptScreen() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [displayedAnimals, setDisplayedAnimals] = useState<any[]>([]);
+  const [shuffledAnimals, setShuffledAnimals] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Shuffle the array once on component mount to ensure a different order each time
+    const shuffled = [...ALL_ANIMALS].sort(() => Math.random() - 0.5);
+    setShuffledAnimals(shuffled);
+  }, []);
 
   const filteredAnimals = useMemo(() => {
-    return ALL_ANIMALS.filter(animal => {
+    return shuffledAnimals.filter(animal => {
       if (!animal) return false;
       switch (selectedFilter) {
         case 'urgent':
@@ -85,7 +92,7 @@ export default function AdoptScreen() {
           return true;
       }
     });
-  }, [selectedFilter]);
+  }, [selectedFilter, shuffledAnimals]);
 
   useEffect(() => {
     setPage(1);
