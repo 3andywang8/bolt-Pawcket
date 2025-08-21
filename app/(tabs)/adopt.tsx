@@ -1,112 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Image,
   StatusBar,
+  ActivityIndicator,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Filter, MapPin, Heart, Clock } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
-// Extended mock data for adoption list
-const ADOPTION_ANIMALS = [
-  {
-    id: '1',
-    name: '阿橘',
-    age: '2歲',
-    breed: '橘貓',
-    location: '台北市中山區',
-    image: 'https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg',
-    shelterDays: 45,
-    personality: ['親人', '愛玩', '愛撒嬌'],
-    adoptionStatus: 'available',
-    isUrgent: false,
-  },
-  {
-    id: '2',
-    name: '小白',
-    age: '1歲',
-    breed: '混種犬',
-    location: '台北市信義區',
-    image: 'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg',
-    shelterDays: 23,
-    personality: ['溫和', '聰明', '友善'],
-    adoptionStatus: 'available',
-    isUrgent: false,
-  },
-  {
-    id: '3',
-    name: '花花',
-    age: '3歲',
-    breed: '三花貓',
-    location: '新北市板橋區',
-    image: 'https://images.pexels.com/photos/774731/pexels-photo-774731.jpeg',
-    shelterDays: 67,
-    personality: ['安靜', '依賴', '溫柔'],
-    adoptionStatus: 'available',
-    isUrgent: true,
-  },
-  {
-    id: '4',
-    name: '黑仔',
-    age: '4歲',
-    breed: '黑狗',
-    location: '桃園市中壢區',
-    image: 'https://images.pexels.com/photos/97082/weimaraner-puppy-dog-snout-97082.jpeg',
-    shelterDays: 89,
-    personality: ['忠心', '護主', '活潑'],
-    adoptionStatus: 'available',
-    isUrgent: true,
-  },
-  {
-    id: '5',
-    name: '小灰',
-    age: '6個月',
-    breed: '灰貓',
-    location: '台中市西區',
-    image: 'https://images.pexels.com/photos/1056251/pexels-photo-1056251.jpeg',
-    shelterDays: 12,
-    personality: ['幼稚', '好奇', '愛玩'],
-    adoptionStatus: 'available',
-    isUrgent: false,
-  },
-];
+import ALL_ANIMALS from './datas';
 
-export default function AdoptScreen() {
+const ITEMS_PER_PAGE = 2;
+
+const AnimalCard = React.memo(({ animal }: { animal: any }) => {
   const router = useRouter();
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  
-  const filterOptions = [
-    { key: 'all', label: '全部' },
-    { key: 'urgent', label: '急需' },
-    { key: 'cat', label: '貓咪' },
-    { key: 'dog', label: '狗狗' },
-    { key: 'young', label: '幼年' },
-  ];
-
-  const filteredAnimals = ADOPTION_ANIMALS.filter(animal => {
-    switch (selectedFilter) {
-      case 'urgent':
-        return animal.isUrgent;
-      case 'cat':
-        return animal.breed.includes('貓');
-      case 'dog':
-        return animal.breed.includes('犬') || animal.breed.includes('狗');
-      case 'young':
-        return animal.age.includes('個月') || parseInt(animal.age) <= 1;
-      default:
-        return true;
-    }
-  });
-
-  const AnimalCard = ({ animal }: { animal: any }) => (
+  return (
     <TouchableOpacity
       style={styles.animalCard}
-      onPress={() => router.push(`/animal/${animal.id}` as any)}>
+      onPress={() => router.push((`/animal/${animal.id}` as any))}>
       <Image source={{ uri: animal.image }} style={styles.animalImage} />
       
       {animal.isUrgent && (
@@ -122,15 +39,15 @@ export default function AdoptScreen() {
       
       <View style={styles.animalInfo}>
         <View style={styles.animalHeader}>
-          <Text style={styles.animalName}>{animal.name}</Text>
+          <Text style={styles.animalName} numberOfLines={1}>{animal.name}</Text>
           <Text style={styles.animalAge}>{animal.age}</Text>
         </View>
         
-        <Text style={styles.animalBreed}>{animal.breed}</Text>
+        <Text style={styles.animalBreed} numberOfLines={1}>{animal.breed}</Text>
         
         <View style={styles.locationRow}>
           <MapPin size={12} color="#78716C" />
-          <Text style={styles.locationText}>{animal.location}</Text>
+          <Text style={styles.locationText} numberOfLines={1}>{animal.location}</Text>
         </View>
         
         <View style={styles.personalityContainer}>
@@ -145,12 +62,64 @@ export default function AdoptScreen() {
       </View>
     </TouchableOpacity>
   );
+});
+
+export default function AdoptScreen() {
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [displayedAnimals, setDisplayedAnimals] = useState<any[]>([]);
+
+  const filteredAnimals = useMemo(() => {
+    return ALL_ANIMALS.filter(animal => {
+      if (!animal) return false;
+      switch (selectedFilter) {
+        case 'urgent':
+          return animal.isUrgent;
+        case 'cat':
+          return animal.breed?.includes('貓');
+        case 'dog':
+          return animal.breed?.includes('犬') || animal.breed?.includes('狗');
+        case 'young':
+          return animal.age?.includes('幼');
+        default:
+          return true;
+      }
+    });
+  }, [selectedFilter]);
+
+  useEffect(() => {
+    setPage(1);
+    setDisplayedAnimals(filteredAnimals.slice(0, ITEMS_PER_PAGE));
+  }, [filteredAnimals]);
+
+  const loadMoreItems = () => {
+    const nextPage = page + 1;
+    const nextItems = filteredAnimals.slice(0, nextPage * ITEMS_PER_PAGE);
+    if (nextItems.length > displayedAnimals.length) {
+      setPage(nextPage);
+      setDisplayedAnimals(nextItems);
+    }
+  };
+
+  const filterOptions = [
+    { key: 'all', label: '全部' },
+    { key: 'urgent', label: '急需' },
+    { key: 'cat', label: '貓咪' },
+    { key: 'dog', label: '狗狗' },
+    { key: 'young', label: '幼年' },
+  ];
+
+  const renderFooter = () => {
+    if (displayedAnimals.length < filteredAnimals.length) {
+      return <ActivityIndicator size="large" color="#F97316" style={{ marginVertical: 20 }} />;
+    }
+    return null;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FEFDFB" />
       
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>等家的朋友</Text>
         <View style={styles.headerButtons}>
@@ -163,7 +132,6 @@ export default function AdoptScreen() {
         </View>
       </View>
 
-      {/* Filter Tabs */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -188,21 +156,22 @@ export default function AdoptScreen() {
         ))}
       </ScrollView>
 
-      {/* Animals List */}
-      <ScrollView
+      <FlatList
+        data={displayedAnimals}
+        renderItem={({ item }) => <AnimalCard animal={item} />}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
         style={styles.animalsList}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.animalsContent}>
-        <Text style={styles.resultCount}>
-          共 {filteredAnimals.length} 隻動物等待領養
-        </Text>
-        
-        <View style={styles.animalsGrid}>
-          {filteredAnimals.map((animal) => (
-            <AnimalCard key={animal.id} animal={animal} />
-          ))}
-        </View>
-      </ScrollView>
+        contentContainerStyle={styles.animalsContent}
+        onEndReached={loadMoreItems}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        ListHeaderComponent={() => (
+          <Text style={styles.resultCount}>
+            共 {filteredAnimals.length} 隻動物等待領養
+          </Text>
+        )}
+      />
     </SafeAreaView>
   );
 }

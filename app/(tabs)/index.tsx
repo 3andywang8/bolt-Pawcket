@@ -21,41 +21,7 @@ const CARD_WIDTH = screenWidth * 0.9;
 const CARD_HEIGHT = screenHeight * 0.7;
 
 // Mock animal data
-const ANIMALS_DATA = [
-  {
-    id: '1',
-    name: '阿橘',
-    age: '2歲',
-    breed: '橘貓',
-    location: '台北市中山區',
-    story: '我是一隻活潑的橘貓，喜歡曬太陽和玩逗貓棒。曾經在街頭流浪，現在在等待一個溫暖的家。我很親人，也很愛撒嬌喔！',
-    image: 'https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg',
-    shelterDays: 45,
-    personality: ['親人', '愛玩', '愛撒嬌'],
-  },
-  {
-    id: '2',
-    name: '小白',
-    age: '1歲',
-    breed: '混種犬',
-    location: '台北市信義區',
-    story: '我是一隻可愛的小白狗，個性溫和友善。喜歡和人類玩耍，也很聰明會握手喔！希望能找到一個愛我的家庭。',
-    image: 'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg',
-    shelterDays: 23,
-    personality: ['溫和', '聰明', '友善'],
-  },
-  {
-    id: '3',
-    name: '花花',
-    age: '3歲',
-    breed: '三花貓',
-    location: '新北市板橋區',
-    story: '我是一隻美麗的三花貓，喜歡安靜的環境。雖然剛開始會有點害羞，但熟悉後就會變得很依賴主人。我喜歡看窗外的風景。',
-    image: 'https://images.pexels.com/photos/774731/pexels-photo-774731.jpeg',
-    shelterDays: 67,
-    personality: ['安靜', '依賴', '溫柔'],
-  },
-];
+import ANIMALS_DATA from './datas';
 
 export default function ExploreScreen() {
   const router = useRouter();

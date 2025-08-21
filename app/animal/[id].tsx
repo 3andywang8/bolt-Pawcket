@@ -17,60 +17,9 @@ import { ArrowLeft, Heart, Share2, MapPin, Clock, Gift, Chrome as Home, Phone, M
 import * as Haptics from 'expo-haptics';
 
 const { width: screenWidth } = Dimensions.get('window');
+import ANIMALS_DATA from '../(tabs)/datas';
 
 // Mock animal data (same as in explore screen)
-const ANIMALS_DATA = [
-  {
-    id: '1',
-    name: '阿橘',
-    age: '2歲',
-    breed: '橘貓',
-    gender: '男生',
-    weight: '4.2kg',
-    location: '台北市中山區',
-    story: '我是一隻活潑的橘貓，喜歡曬太陽和玩逗貓棒。曾經在街頭流浪，現在在等待一個溫暖的家。我很親人，也很愛撒嬌喔！雖然曾經受過傷，但我對人類依然充滿信任。希望能找到一個耐心的主人，陪我度過剩下的貓生。',
-    images: [
-      'https://images.pexels.com/photos/1170986/pexels-photo-1170986.jpeg',
-      'https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg',
-    ],
-    shelterDays: 45,
-    personality: ['親人', '愛玩', '愛撒嬌', '溫柔'],
-    health: ['已絕育', '已施打疫苗', '健康良好'],
-    shelter: '台北市動物之家',
-    shelterPhone: '02-2570-3153',
-    adoptionRequirements: [
-      '需有固定收入',
-      '家人同意飼養',
-      '承諾不離不棄',
-      '定期健康檢查',
-    ],
-  },
-  {
-    id: '2',
-    name: '小白',
-    age: '1歲',
-    breed: '混種犬',
-    gender: '女生',
-    weight: '8.5kg',
-    location: '台北市信義區',
-    story: '我是一隻可愛的小白狗，個性溫和友善。喜歡和人類玩耍，也很聰明會握手喔！希望能找到一個愛我的家庭。',
-    images: [
-      'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg',
-      'https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg',
-    ],
-    shelterDays: 23,
-    personality: ['溫和', '聰明', '友善', '活潑'],
-    health: ['已絕育', '已施打疫苗', '健康良好'],
-    shelter: '新北市動物保護防疫處',
-    shelterPhone: '02-2959-6353',
-    adoptionRequirements: [
-      '有養狗經驗佳',
-      '每日遛狗',
-      '提供足夠運動空間',
-      '定期健康檢查',
-    ],
-  },
-];
 
 export default function AnimalProfileScreen() {
   const router = useRouter();
