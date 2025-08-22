@@ -45,11 +45,11 @@ export default function ExploreScreen() {
 
   const forceSwipe = (direction: 'right' | 'left') => {
     const x = direction === 'right' ? screenWidth + 100 : -screenWidth - 100;
-    
+
     if (direction === 'right') {
       triggerHapticFeedback();
     }
-    
+
     Animated.parallel([
       Animated.timing(position, {
         toValue: { x, y: 0 },
@@ -66,7 +66,7 @@ export default function ExploreScreen() {
 
   const onSwipeComplete = (direction: 'right' | 'left') => {
     const item = animals[currentIndex];
-    
+
     if (direction === 'right') {
       // Handle like action
       console.log('Liked:', item.name);
@@ -77,7 +77,7 @@ export default function ExploreScreen() {
 
     setCurrentIndex((prevIndex) => (prevIndex + 1) % animals.length);
     resetPosition();
-    
+
     // Animate next card
     Animated.parallel([
       Animated.timing(nextCardOpacity, {
@@ -107,7 +107,7 @@ export default function ExploreScreen() {
       onPanResponderMove: (_, gesture) => {
         position.setValue({ x: gesture.dx, y: gesture.dy });
         rotate.setValue(gesture.dx / screenWidth);
-        
+
         // Animate next card based on current card movement
         const progress = Math.abs(gesture.dx) / screenWidth;
         nextCardOpacity.setValue(0.8 + progress * 0.2);
@@ -115,7 +115,7 @@ export default function ExploreScreen() {
       },
       onPanResponderRelease: (_, gesture) => {
         position.flattenOffset();
-        
+
         const threshold = 120;
         if (gesture.dx > threshold) {
           forceSwipe('right');
@@ -174,26 +174,44 @@ export default function ExploreScreen() {
         <Animated.View
           key={animal.id}
           style={[styles.card, rotateAndTranslate]}
-          {...panResponder.panHandlers}>
+          {...panResponder.panHandlers}
+        >
           <TouchableOpacity
             style={styles.cardContent}
             onPress={() => router.push(`/animal/${animal.id}` as any)}
-            activeOpacity={0.9}>
+            activeOpacity={0.9}
+          >
             <Image source={{ uri: animal.image }} style={styles.cardImage} />
-            
+
             {/* Like Overlay */}
-            <Animated.View style={[styles.choiceOverlay, styles.likeOverlay, { opacity: likeOpacity }]}>
+            <Animated.View
+              style={[
+                styles.choiceOverlay,
+                styles.likeOverlay,
+                { opacity: likeOpacity },
+              ]}
+            >
               <View style={styles.choiceContent}>
                 <Heart size={40} color="#FFFFFF" fill="#FFFFFF" />
-                <Text style={[styles.choiceText, { color: '#FFFFFF' }]}>喜歡</Text>
+                <Text style={[styles.choiceText, { color: '#FFFFFF' }]}>
+                  喜歡
+                </Text>
               </View>
             </Animated.View>
 
             {/* Bless Overlay */}
-            <Animated.View style={[styles.choiceOverlay, styles.blessOverlay, { opacity: blessOpacity }]}>
+            <Animated.View
+              style={[
+                styles.choiceOverlay,
+                styles.blessOverlay,
+                { opacity: blessOpacity },
+              ]}
+            >
               <View style={styles.choiceContent}>
                 <Star size={40} color="#FFFFFF" fill="#FFFFFF" />
-                <Text style={[styles.choiceText, { color: '#FFFFFF' }]}>祝福</Text>
+                <Text style={[styles.choiceText, { color: '#FFFFFF' }]}>
+                  祝福
+                </Text>
               </View>
             </Animated.View>
 
@@ -202,14 +220,14 @@ export default function ExploreScreen() {
                 <Text style={styles.animalName}>{animal.name}</Text>
                 <Text style={styles.animalAge}>{animal.age}</Text>
               </View>
-              
+
               <Text style={styles.animalBreed}>{animal.breed}</Text>
-              
+
               <View style={styles.locationRow}>
                 <MapPin size={14} color="#78716C" />
                 <Text style={styles.locationText}>{animal.location}</Text>
               </View>
-              
+
               <View style={styles.personalityContainer}>
                 {animal.personality.map((trait: string, idx: number) => (
                   <View key={idx} style={styles.personalityTag}>
@@ -217,12 +235,14 @@ export default function ExploreScreen() {
                   </View>
                 ))}
               </View>
-              
+
               <Text style={styles.storyText} numberOfLines={3}>
                 {animal.story}
               </Text>
-              
-              <Text style={styles.shelterDays}>在收容所 {animal.shelterDays} 天</Text>
+
+              <Text style={styles.shelterDays}>
+                在收容所 {animal.shelterDays} 天
+              </Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -239,7 +259,8 @@ export default function ExploreScreen() {
             opacity: nextCardOpacity,
             transform: [{ scale: nextCardScale }],
           },
-        ]}>
+        ]}
+      >
         <TouchableOpacity style={styles.cardContent} activeOpacity={1}>
           <Image source={{ uri: animal.image }} style={styles.cardImage} />
           <View style={styles.cardInfo}>
@@ -261,7 +282,7 @@ export default function ExploreScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FEFDFB" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>發現新朋友</Text>
@@ -279,13 +300,15 @@ export default function ExploreScreen() {
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={[styles.actionButton, styles.blessButton]}
-          onPress={() => forceSwipe('left')}>
+          onPress={() => forceSwipe('left')}
+        >
           <Star size={28} color="#FBBF24" fill="#FBBF24" />
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.actionButton, styles.likeButton]}
-          onPress={() => forceSwipe('right')}>
+          onPress={() => forceSwipe('right')}
+        >
           <Heart size={28} color="#FFFFFF" fill="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -309,6 +332,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    zIndex: 50,
   },
   headerTitle: {
     fontSize: 24,

@@ -1,32 +1,49 @@
-
-import React, { useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Video } from 'expo-av';
-import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect } from 'react';
+import { StyleSheet, View, Platform, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { VideoView, useVideoPlayer } from 'expo-video';
 
 export default function SplashScreen() {
   const router = useRouter();
-  const videoRef = useRef<Video>(null);
 
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (status.didJustFinish) {
+  // 初始化播放器，啟用自動播放且不重複
+  const player = useVideoPlayer(require('../assets/mp4.mp4'), (player) => {
+    player.loop = false; // 播放完才會觸發結束
+    player.muted = true; // 網頁自動播放策略需要靜音
+    player.play(); // 自動播放
+  });
+
+  // 聚焦播放、失焦暫停
+  useFocusEffect(
+    useCallback(() => {
+      player.play();
+      return () => {
+        player.pause();
+      };
+    }, [player])
+  );
+
+  // 影片播畢 1 秒後自動導向 /(tabs)
+  useEffect(() => {
+    const sub = player.addListener('playToEnd', () => {
       setTimeout(() => {
         router.replace('/(tabs)');
-      }, 300);
-    }
-  };
+      }, 1000);
+    });
+    return () => sub.remove();
+  }, [player, router]);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.centeredContent}>
-        <Video
-          ref={videoRef}
+        <VideoView
           style={styles.video}
-          source={require('../assets/mp4.mov')}
-          shouldPlay
-          resizeMode="contain"
-          onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+          player={player}
+          nativeControls={false} // 不顯示控制列
+          allowsFullscreen={false}
+          allowsPictureInPicture={false}
+          contentFit="cover" // 填滿容器
         />
       </View>
     </SafeAreaView>
