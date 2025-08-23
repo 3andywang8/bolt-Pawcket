@@ -22,11 +22,18 @@ const CARD_HEIGHT = screenHeight * 0.7;
 
 // Mock animal data
 import ANIMALS_DATA from './datas';
-
 export default function ExploreScreen() {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [animals] = useState(ANIMALS_DATA);
+  // 穩定的隨機排序資料：只在首次掛載時生成，且不會改動原始資料
+  const animals = React.useMemo(() => {
+    const copy = [...ANIMALS_DATA];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }, []);
   const position = useRef(new Animated.ValueXY()).current;
   const rotate = useRef(new Animated.Value(0)).current;
   const nextCardOpacity = useRef(new Animated.Value(0.8)).current;
@@ -68,17 +75,17 @@ export default function ExploreScreen() {
     const item = animals[currentIndex];
 
     if (direction === 'right') {
-      // Handle like action
+      // 右滑：喜歡並切換下一張
       console.log('Liked:', item.name);
     } else {
-      // Handle blessing action
+      // 左滑：祝福但不切換
       console.log('Blessed:', item.name);
     }
-
     setCurrentIndex((prevIndex) => (prevIndex + 1) % animals.length);
+
     resetPosition();
 
-    // Animate next card
+    // 將下一張卡片的預視值復原到預設
     Animated.parallel([
       Animated.timing(nextCardOpacity, {
         toValue: 0.8,
@@ -99,8 +106,8 @@ export default function ExploreScreen() {
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         position.setOffset({
-          x: position.x._value,
-          y: position.y._value,
+          x: (position.x as any)._value,
+          y: (position.y as any)._value,
         });
         position.setValue({ x: 0, y: 0 });
       },
@@ -165,10 +172,11 @@ export default function ExploreScreen() {
   });
 
   const renderCard = (animal: any, index: number) => {
+    // 最上層：目前卡片
     if (index < currentIndex) {
       return null;
     }
-
+    console.log(index, currentIndex, animal);
     if (index === currentIndex) {
       return (
         <Animated.View
@@ -248,35 +256,44 @@ export default function ExploreScreen() {
         </Animated.View>
       );
     }
-
-    return (
-      <Animated.View
-        key={animal.id}
-        style={[
-          styles.card,
-          styles.nextCard,
-          {
-            opacity: nextCardOpacity,
-            transform: [{ scale: nextCardScale }],
-          },
-        ]}
-      >
-        <TouchableOpacity style={styles.cardContent} activeOpacity={1}>
-          <Image source={{ uri: animal.image }} style={styles.cardImage} />
-          <View style={styles.cardInfo}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.animalName}>{animal.name}</Text>
-              <Text style={styles.animalAge}>{animal.age}</Text>
+    if (index == currentIndex + 1) {
+      return (
+        <Animated.View
+          key={animal.id}
+          style={[
+            styles.card,
+            styles.nextCard,
+            {
+              opacity: nextCardOpacity,
+              transform: [{ scale: nextCardScale }],
+            },
+          ]}
+        >
+          <TouchableOpacity style={styles.cardContent} activeOpacity={1}>
+            <Image source={{ uri: animal.image }} style={styles.cardImage} />
+            <View style={styles.cardInfo}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.animalName}>{animal.name}</Text>
+                <Text style={styles.animalAge}>{animal.age}</Text>
+              </View>
+              <Text style={styles.animalBreed}>{animal.breed}</Text>
+              <View style={styles.locationRow}>
+                <MapPin size={14} color="#78716C" />
+                <Text style={styles.locationText}>{animal.location}</Text>
+              </View>
+              <View style={styles.personalityContainer}>
+                {animal.personality.map((trait: string, idx: number) => (
+                  <View key={idx} style={styles.personalityTag}>
+                    <Text style={styles.personalityText}>{trait}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            <Text style={styles.animalBreed}>{animal.breed}</Text>
-            <View style={styles.locationRow}>
-              <MapPin size={14} color="#78716C" />
-              <Text style={styles.locationText}>{animal.location}</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
-    );
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    }
+    return null;
   };
 
   return (
@@ -293,7 +310,7 @@ export default function ExploreScreen() {
 
       {/* Cards */}
       <View style={styles.cardContainer}>
-        {animals.map((animal, index) => renderCard(animal, index)).reverse()}
+        {animals.map((animal, index) => renderCard(animal, index))}
       </View>
 
       {/* Action Buttons */}

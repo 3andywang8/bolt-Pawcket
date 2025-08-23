@@ -8,7 +8,7 @@ export default function SplashScreen() {
   const router = useRouter();
 
   // 初始化播放器，啟用自動播放且不重複
-  const player = useVideoPlayer(require('../assets/mp4.mp4'), (player) => {
+  const player = useVideoPlayer(require('../assets/logo.mp4'), (player) => {
     player.loop = false; // 播放完才會觸發結束
     player.muted = true; // 網頁自動播放策略需要靜音
     player.play(); // 自動播放
