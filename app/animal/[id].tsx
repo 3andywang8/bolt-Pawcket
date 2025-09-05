@@ -59,7 +59,7 @@ export default function AnimalProfileScreen() {
     triggerHapticFeedback();
     
     if (animal?.type) {
-      const targetPath = '/TreatSelectionScreen';
+      const targetPath = '/TreatSelectionScreen' as any;
       const params = { animalType: animal.type };
       
       console.log(`[DEBUG] Attempting to navigate to: ${targetPath} with params:`, params); // 監控點 2：確認跳轉參數
