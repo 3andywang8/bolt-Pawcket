@@ -19,21 +19,21 @@ import * as Haptics from 'expo-haptics';
 const TREATS = {
   dog: [
     {
-      id: 'dog-freeze-dried',
+      id: 'd1',
       name: '凍乾雞肉',
       price: 50,
       image: require('../assets/dog-treat-freeze-dried.png'),
       description: '純天然凍乾雞肉，營養豐富',
     },
     {
-      id: 'dog-dental-bone',
+      id: 'd2',
       name: '潔牙骨',
       price: 30,
       image: require('../assets/dog-treat-dental-bone.png'),
       description: '幫助清潔牙齒，維護口腔健康',
     },
     {
-      id: 'dog-chicken-jerky',
+      id: 'd3',
       name: '雞肉條',
       price: 40,
       image: require('../assets/dog-treat-chicken-jerky.png'),
@@ -42,21 +42,21 @@ const TREATS = {
   ],
   cat: [
     {
-      id: 'cat-puree',
+      id: 'c1',
       name: '肉泥',
       price: 35,
       image: require('../assets/cat-treat-puree.png'),
       description: '滑嫩肉泥，貓咪無法抗拒',
     },
     {
-      id: 'cat-freeze-dried',
+      id: 'c2',
       name: '凍乾魚肉',
       price: 45,
       image: require('../assets/cat-treat-freeze-dried.png'),
       description: '新鮮魚肉凍乾，保留原味',
     },
     {
-      id: 'cat-biscuits',
+      id: 'c3',
       name: '脆餅乾',
       price: 25,
       image: require('../assets/cat-treat-biscuits.png'),

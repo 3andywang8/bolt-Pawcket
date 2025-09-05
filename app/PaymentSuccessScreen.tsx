@@ -18,14 +18,28 @@ export default function PaymentSuccessScreen() {
   const router = useRouter();
   const { treatId, treatName, price, animalType, paymentMethod } = useLocalSearchParams();
   
+  // 動態選擇影片的邏輯
+  const videoSources = {
+    // 狗狗的零食影片
+    'd1': require('../assets/dog-treat-freeze-dried.mp4'),
+    'd2': require('../assets/dog-treat-dental-bone.mp4'),
+    'd3': require('../assets/dog-treat-chicken-jerky.mp4'),
+    // 貓咪的零食影片
+    'c1': require('../assets/cat-treat-puree.mp4'),
+    'c2': require('../assets/cat-treat-freeze-dried.mp4'),
+    'c3': require('../assets/cat-treat-biscuits.mp4'),
+  };
+
+  const videoSource = videoSources[treatId as keyof typeof videoSources] || require('../assets/logo.mp4'); // 如果找不到對應影片，就播放預設的 logo 影片
+  
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // 模擬即時影像 - 使用 logo.mp4 作為示例
-  const player = useVideoPlayer(require('../assets/logo.mp4'), (player) => {
-    player.loop = true;
+  // 使用動態選擇的影片來源初始化播放器
+  const player = useVideoPlayer(videoSource, (player) => {
+    player.loop = false; // 不重複播放
     player.muted = false;
-    player.play();
+    player.play(); // 自動播放
   });
 
   const triggerHapticFeedback = () => {
@@ -230,7 +244,7 @@ const styles = StyleSheet.create({
   },
   video: {
     width: '100%',
-    height: 200,
+    aspectRatio: 1,
   },
   liveIndicator: {
     position: 'absolute',
