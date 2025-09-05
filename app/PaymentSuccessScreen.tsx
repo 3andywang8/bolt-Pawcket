@@ -36,10 +36,10 @@ export default function PaymentSuccessScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // 使用動態選擇的影片來源初始化播放器
-  const player = useVideoPlayer(videoSource, (player) => {
-    player.loop = false; // 不重複播放
-    player.muted = false;
-    player.play(); // 自動播放
+  const player = useVideoPlayer(videoSource, player => {
+    player.shouldPlay = true; // 自動播放
+    player.isLooping = false; // 不重複
+    player.isMuted = true;    // 預設靜音
   });
 
   const triggerHapticFeedback = () => {
