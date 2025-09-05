@@ -55,18 +55,28 @@ export default function AnimalProfileScreen() {
   };
 
   const handleDonation = () => {
-    console.log('handleDonation function called!');
+    console.log('[DEBUG] handleDonation function called.'); // 監控點 1：確認函式被呼叫
     triggerHapticFeedback();
-    Alert.alert(
-      '線上投餵',
-      `幫 ${animal.name} 投餵愛心！`,
-      [
-        { text: 'NT$50', onPress: () => processDonation(50) },
-        { text: 'NT$100', onPress: () => processDonation(100) },
-        { text: 'NT$200', onPress: () => processDonation(200) },
-        { text: '取消', style: 'cancel' },
-      ]
-    );
+    
+    if (animal?.type) {
+      const targetPath = '/TreatSelectionScreen';
+      const params = { animalType: animal.type };
+      
+      console.log(`[DEBUG] Attempting to navigate to: ${targetPath} with params:`, params); // 監控點 2：確認跳轉參數
+      
+      try {
+        router.push({
+          pathname: targetPath,
+          params: params,
+        });
+        console.log('[DEBUG] router.push command executed without error.'); // 監控點 3：確認指令執行完畢
+      } catch (error) {
+        console.error('[DEBUG] An error occurred during router.push:', error); // 監控點 4：捕捉跳轉時的錯誤
+      }
+    } else {
+      console.error('[DEBUG] Navigation failed: Animal type is missing.');
+      Alert.alert('錯誤', '無法確定動物類型');
+    }
   };
 
   const processDonation = (amount: number) => {
