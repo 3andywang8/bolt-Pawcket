@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "build:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo-google-fonts/noto-sans-tc": "^0.4.1",
@@ -27,7 +29,7 @@
     "expo-status-bar": "~2.2.2",
     "expo-symbols": "~0.4.3",
     "expo-system-ui": "~5.0.5",
-    "expo-video": "^2.2.2",
+    "expo-video": "~2.2.2",
     "expo-web-browser": "~14.1.5",
     "lucide-react-native": "^0.475.0",
     "react": "19.0.0",

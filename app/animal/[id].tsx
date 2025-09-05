@@ -45,6 +45,7 @@ export default function AnimalProfileScreen() {
   };
 
   const handleFavorite = () => {
+    console.log('handleFavorite function called!');
     triggerHapticFeedback();
     setIsFavorited(!isFavorited);
   };
@@ -54,6 +55,7 @@ export default function AnimalProfileScreen() {
   };
 
   const handleDonation = () => {
+    console.log('handleDonation function called!');
     triggerHapticFeedback();
     Alert.alert(
       '線上投餵',
@@ -77,6 +79,7 @@ export default function AnimalProfileScreen() {
   };
 
   const handleAdoptionInquiry = () => {
+    console.log('handleAdoptionInquiry function called!');
     Alert.alert(
       '領養諮詢',
       '領養是一生的承諾，請確實考慮後再提出申請。',
@@ -106,7 +109,10 @@ export default function AnimalProfileScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Header Image */}
         <View style={styles.imageContainer}>
           <Image
