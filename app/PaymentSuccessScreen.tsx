@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,38 +9,50 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Heart, Chrome as Home, Share2 } from 'lucide-react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as Haptics from 'expo-haptics';
 
 export default function PaymentSuccessScreen() {
   const router = useRouter();
-  const { treatId, treatName, price, animalType, paymentMethod } = useLocalSearchParams();
-  
+  const { treatId, treatName, price, animalType, paymentMethod } =
+    useLocalSearchParams();
+
   // 動態選擇影片的邏輯
   const videoSources = {
     // 狗狗的零食影片
-    'd1': require('../assets/dog-treat-freeze-dried.mp4'),
-    'd2': require('../assets/dog-treat-dental-bone.mp4'),
-    'd3': require('../assets/dog-treat-chicken-jerky.mp4'),
+    d1: require('../assets/dog-treat-freeze-dried.mp4'),
+    d2: require('../assets/dog-treat-dental-bone.mp4'),
+    d3: require('../assets/dog-treat-chicken-jerky.mp4'),
     // 貓咪的零食影片
-    'c1': require('../assets/cat-treat-puree.mp4'),
-    'c2': require('../assets/cat-treat-freeze-dried.mp4'),
-    'c3': require('../assets/cat-treat-biscuits.mp4'),
+    c1: require('../assets/cat-treat-puree.mp4'),
+    c2: require('../assets/cat-treat-freeze-dried.mp4'),
+    c3: require('../assets/cat-treat-biscuits.mp4'),
   };
 
-  const videoSource = videoSources[treatId as keyof typeof videoSources] || require('../assets/logo.mp4'); // 如果找不到對應影片，就播放預設的 logo 影片
-  
+  const videoSource =
+    videoSources[treatId as keyof typeof videoSources] ||
+    require('../assets/logo.mp4'); // 如果找不到對應影片，就播放預設的 logo 影片
+
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // 使用動態選擇的影片來源初始化播放器
-  const player = useVideoPlayer(videoSource, player => {
-    player.shouldPlay = true; // 自動播放
-    player.isLooping = false; // 不重複
-    player.isMuted = true;    // 預設靜音
+  const player = useVideoPlayer(videoSource, (player) => {
+    player.loop = false; // 播放完才會觸發結束
+    player.muted = true; // 網頁自動播放策略需要靜音
+    player.play(); // 自動播放
   });
+  // 聚焦播放、失焦暫停
+  useFocusEffect(
+    useCallback(() => {
+      player.play();
+      return () => {
+        player.pause();
+      };
+    }, [player])
+  );
 
   const triggerHapticFeedback = () => {
     if (Platform.OS !== 'web') {
@@ -50,7 +62,7 @@ export default function PaymentSuccessScreen() {
 
   useEffect(() => {
     triggerHapticFeedback();
-    
+
     // 成功動畫
     Animated.parallel([
       Animated.spring(scaleAnim, {
@@ -81,20 +93,21 @@ export default function PaymentSuccessScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#F97316" />
-      
+
       {/* 成功標題區域 */}
       <View style={styles.successHeader}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.successIconContainer,
-            { 
+            {
               transform: [{ scale: scaleAnim }],
               opacity: fadeAnim,
-            }
-          ]}>
+            },
+          ]}
+        >
           <Heart size={60} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2} />
         </Animated.View>
-        
+
         <Animated.View style={{ opacity: fadeAnim }}>
           <Text style={styles.successTitle}>投餵成功！</Text>
           <Text style={styles.successSubtitle}>
@@ -163,16 +176,12 @@ export default function PaymentSuccessScreen() {
 
       {/* 底部按鈕 */}
       <View style={styles.bottomActions}>
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={handleShare}>
+        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
           <Share2 size={20} color="#F97316" strokeWidth={2} />
           <Text style={styles.shareButtonText}>分享愛心</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.homeButton}
-          onPress={handleBackToHome}>
+
+        <TouchableOpacity style={styles.homeButton} onPress={handleBackToHome}>
           <Home size={20} color="#FFFFFF" strokeWidth={2} />
           <Text style={styles.homeButtonText}>回到首頁</Text>
         </TouchableOpacity>
