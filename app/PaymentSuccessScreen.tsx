@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,18 @@ import {
   StatusBar,
   Animated,
   Platform,
+  Modal,
+  Pressable,
+  Dimensions,
+  Share,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Heart, Chrome as Home, Share2 } from 'lucide-react-native';
+import { Heart, Chrome as Home, Share2, Bookmark, Download, Instagram, MessageCircle, AtSign, Send } from 'lucide-react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as Haptics from 'expo-haptics';
+import RNShare from 'react-native-share';
 
 export default function PaymentSuccessScreen() {
   const router = useRouter();
@@ -37,6 +43,8 @@ export default function PaymentSuccessScreen() {
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   // 使用動態選擇的影片來源初始化播放器
   const player = useVideoPlayer(videoSource, (player) => {
@@ -86,6 +94,102 @@ export default function PaymentSuccessScreen() {
   const handleShare = () => {
     // 分享功能
     console.log('分享愛心投餵');
+    setShareModalVisible(true);
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeShareModal = () => {
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShareModalVisible(false);
+    });
+  };
+
+  const handleShareOption = async (platform: string) => {
+    console.log(`分享到 ${platform}`);
+    closeShareModal();
+    
+    // 動態生成分享文案
+    const shareMessage = treatId && typeof treatId === 'string' && treatId.startsWith('d')
+      ? '快來看看這隻可愛的狗狗！馬上加入 Pawcket，一起守護浪浪！'
+      : '快來看看這隻可愛的貓咪！馬上加入 Pawcket，一起守護浪浪！';
+    
+    // 假設的影片網路連結
+    const videoUrl = 'https://example.com/pawcket-video.mp4';
+    
+    try {
+      switch (platform) {
+        case 'Instagram Stories':
+          await RNShare.shareSingle({
+            social: RNShare.Social.INSTAGRAM_STORIES,
+            url: videoUrl,
+            message: shareMessage,
+          });
+          break;
+          
+        case 'Instagram Messages':
+          await RNShare.shareSingle({
+            social: RNShare.Social.INSTAGRAM,
+            url: videoUrl,
+            message: shareMessage,
+          });
+          break;
+          
+        case 'Threads':
+          await RNShare.shareSingle({
+            social: RNShare.Social.THREADS,
+            url: videoUrl,
+            message: shareMessage,
+          });
+          break;
+          
+        case 'Line':
+          await RNShare.shareSingle({
+            social: RNShare.Social.LINE,
+            url: videoUrl,
+            message: shareMessage,
+          });
+          break;
+          
+        case 'More':
+          // 使用 React Native 內建的 Share API
+          await Share.share({
+            message: shareMessage,
+            url: videoUrl,
+            title: 'Pawcket - 守護浪浪',
+          });
+          break;
+          
+        default:
+          console.log('未知的分享平台');
+      }
+    } catch (error) {
+      console.error('分享失敗:', error);
+      Alert.alert('分享失敗', '無法完成分享，請稍後再試。');
+    }
+  };
+
+  const handleBookmark = () => {
+    // 收藏功能
+    console.log('收藏影片');
+    router.navigate('favorites' as any);
+  };
+
+  const handleVideoShare = () => {
+    // 分享影片功能
+    console.log('分享影片');
+  };
+
+  const handleDownload = () => {
+    // 下載功能
+    console.log('下載影片');
   };
 
   const animalName = animalType === 'cat' ? '貓咪' : '狗狗';
@@ -105,7 +209,7 @@ export default function PaymentSuccessScreen() {
             },
           ]}
         >
-          <Heart size={60} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2} />
+          <Heart size={30} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2} />
         </Animated.View>
 
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -136,6 +240,24 @@ export default function PaymentSuccessScreen() {
         <Text style={styles.videoDescription}>
           {animalName}正在開心地享用你贈送的{treatName}！
         </Text>
+        
+        {/* 影片操作按鈕 */}
+        <View style={styles.videoActions}>
+          <TouchableOpacity style={styles.videoActionButton} onPress={handleBookmark}>
+            <Bookmark size={18} color="#78716C" strokeWidth={2} />
+            <Text style={styles.videoActionText}>收藏</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.videoActionButton} onPress={handleVideoShare}>
+            <Share2 size={18} color="#78716C" strokeWidth={2} />
+            <Text style={styles.videoActionText}>分享</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.videoActionButton} onPress={handleDownload}>
+            <Download size={18} color="#78716C" strokeWidth={2} />
+            <Text style={styles.videoActionText}>下載</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 支付詳情 */}
@@ -186,9 +308,92 @@ export default function PaymentSuccessScreen() {
           <Text style={styles.homeButtonText}>回到首頁</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 分享 Modal */}
+      <Modal
+        visible={shareModalVisible}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeShareModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={closeShareModal}>
+          <Animated.View
+            style={[
+              styles.shareModal,
+              {
+                transform: [
+                  {
+                    translateY: slideAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [300, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.modalHandle} />
+            <Text style={styles.shareModalTitle}>分享到</Text>
+            
+            <View style={styles.shareOptions}>
+              <TouchableOpacity
+                style={styles.shareOption}
+                onPress={() => handleShareOption('Instagram Stories')}
+              >
+                <View style={[styles.shareIconContainer, { backgroundColor: '#E4405F' }]}>
+                  <Instagram size={24} color="#FFFFFF" />
+                </View>
+                <Text style={styles.shareOptionText}>Instagram 限時動態</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.shareOption}
+                onPress={() => handleShareOption('Instagram Messages')}
+              >
+                <View style={[styles.shareIconContainer, { backgroundColor: '#E4405F' }]}>
+                  <MessageCircle size={24} color="#FFFFFF" />
+                </View>
+                <Text style={styles.shareOptionText}>Instagram 訊息</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.shareOption}
+                onPress={() => handleShareOption('Threads')}
+              >
+                <View style={[styles.shareIconContainer, { backgroundColor: '#000000' }]}>
+                  <AtSign size={24} color="#FFFFFF" />
+                </View>
+                <Text style={styles.shareOptionText}>Threads</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.shareOption}
+                onPress={() => handleShareOption('Line')}
+              >
+                <View style={[styles.shareIconContainer, { backgroundColor: '#00B900' }]}>
+                  <MessageCircle size={24} color="#FFFFFF" />
+                </View>
+                <Text style={styles.shareOptionText}>Line</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.shareOption}
+                onPress={() => handleShareOption('More')}
+              >
+                <View style={[styles.shareIconContainer, { backgroundColor: '#78716C' }]}>
+                  <Send size={24} color="#FFFFFF" />
+                </View>
+                <Text style={styles.shareOptionText}>分享到</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
+
+const { height: screenHeight } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
@@ -197,29 +402,29 @@ const styles = StyleSheet.create({
   },
   successHeader: {
     backgroundColor: '#F97316',
-    paddingTop: 40,
-    paddingBottom: 30,
+    paddingTop: 20,
+    paddingBottom: 15,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
   successIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   successTitle: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   successSubtitle: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#FFFFFF',
     textAlign: 'center',
     opacity: 0.9,
@@ -283,6 +488,28 @@ const styles = StyleSheet.create({
     color: '#78716C',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  videoActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 24,
+  },
+  videoActionButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F4',
+    minWidth: 60,
+  },
+  videoActionText: {
+    fontSize: 12,
+    color: '#78716C',
+    marginTop: 4,
+    fontWeight: '500',
   },
   paymentDetails: {
     margin: 20,
@@ -371,5 +598,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  // Modal 樣式
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  shareModal: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    paddingTop: 12,
+    minHeight: 280,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  shareModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1917',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  shareOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  shareOption: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  shareIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  shareOptionText: {
+    fontSize: 12,
+    color: '#44403C',
+    textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 16,
   },
 });
