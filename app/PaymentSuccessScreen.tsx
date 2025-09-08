@@ -116,6 +116,12 @@ export default function PaymentSuccessScreen() {
     console.log(`分享到 ${platform}`);
     closeShareModal();
     
+    // 檢查是否為 Web 環境
+    if (Platform.OS === 'web') {
+      alert('此功能僅在手機 App 上提供');
+      return;
+    }
+    
     // 動態生成分享文案
     const shareMessage = treatId && typeof treatId === 'string' && treatId.startsWith('d')
       ? '快來看看這隻可愛的狗狗！馬上加入 Pawcket，一起守護浪浪！'
