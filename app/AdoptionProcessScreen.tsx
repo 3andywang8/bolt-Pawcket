@@ -16,10 +16,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Heart, CheckCircle, Calendar, Phone, MapPin } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-// 領養流程的三個步驟
+// 領養流程的四個步驟
 enum AdoptionStep {
   GUIDELINES = 'guidelines',
   FORM = 'form',
+  SUBMITTED = 'submitted',
   SUCCESS = 'success',
 }
 
@@ -53,6 +54,8 @@ export default function AdoptionProcessScreen() {
       router.back();
     } else if (currentStep === AdoptionStep.FORM) {
       setCurrentStep(AdoptionStep.GUIDELINES);
+    } else if (currentStep === AdoptionStep.SUBMITTED) {
+      router.push('/(tabs)');
     } else {
       router.push('/(tabs)');
     }
@@ -63,9 +66,8 @@ export default function AdoptionProcessScreen() {
     if (currentStep === AdoptionStep.GUIDELINES) {
       setCurrentStep(AdoptionStep.FORM);
     } else if (currentStep === AdoptionStep.FORM) {
-      if (validateForm()) {
-        setCurrentStep(AdoptionStep.SUCCESS);
-      }
+      // 無條件提交申請，不進行表單驗證
+      setCurrentStep(AdoptionStep.SUBMITTED);
     }
   };
 
@@ -116,6 +118,7 @@ export default function AdoptionProcessScreen() {
         <Text style={styles.headerTitle}>
           {currentStep === AdoptionStep.GUIDELINES && '領養須知'}
           {currentStep === AdoptionStep.FORM && '領養申請'}
+          {currentStep === AdoptionStep.SUBMITTED && '申請已提交'}
           {currentStep === AdoptionStep.SUCCESS && '預約成功'}
         </Text>
         <View style={styles.placeholder} />
@@ -135,6 +138,7 @@ export default function AdoptionProcessScreen() {
         <Text style={styles.progressText}>
           {currentStep === AdoptionStep.GUIDELINES && '步驟 1/3'}
           {currentStep === AdoptionStep.FORM && '步驟 2/3'}
+          {currentStep === AdoptionStep.SUBMITTED && '完成'}
           {currentStep === AdoptionStep.SUCCESS && '完成'}
         </Text>
       </View>
@@ -154,6 +158,13 @@ export default function AdoptionProcessScreen() {
           />
         )}
         
+        {currentStep === AdoptionStep.SUBMITTED && (
+          <SubmittedStep 
+            animalName={animalName as string}
+            animalType={animalType as string}
+          />
+        )}
+        
         {currentStep === AdoptionStep.SUCCESS && (
           <SuccessStep 
             formData={formData}
@@ -165,7 +176,7 @@ export default function AdoptionProcessScreen() {
       </ScrollView>
 
       {/* Bottom Button */}
-      {currentStep !== AdoptionStep.SUCCESS && (
+      {currentStep !== AdoptionStep.SUCCESS && currentStep !== AdoptionStep.SUBMITTED && (
         <View style={styles.bottomContainer}>
           <TouchableOpacity style={styles.nextButton} onPress={handleNextStep}>
             <Text style={styles.nextButtonText}>
@@ -517,6 +528,89 @@ const FormStep = ({
   );
 };
 
+// 申請已提交步驟
+const SubmittedStep = ({ 
+  animalName, 
+  animalType 
+}: { 
+  animalName: string; 
+  animalType: string;
+}) => {
+  const router = useRouter();
+  const animalTypeText = animalType === 'cat' ? '貓咪' : '狗狗';
+
+  return (
+    <View style={styles.stepContainer}>
+      <View style={styles.successHeader}>
+        <CheckCircle size={64} color="#10B981" />
+        <Text style={styles.successTitle}>申請已提交！</Text>
+        <Text style={styles.successSubtitle}>
+          感謝您的申請，我們已收到您對 {animalName} 的領養申請
+        </Text>
+      </View>
+
+      <View style={styles.submittedCard}>
+        <Text style={styles.submittedTitle}>後續流程說明</Text>
+        
+        <View style={styles.submittedContent}>
+          <Text style={styles.submittedText}>
+            收容所已收到申請，請靜候 Email 通知，收到確認信後，即表示申請成功，即可於申請日期前往探望{animalTypeText}，並完成領養作業。
+          </Text>
+          
+          <View style={styles.submittedSteps}>
+            <View style={styles.submittedStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>1</Text>
+              </View>
+              <Text style={styles.stepText}>等待收容所審核申請資料</Text>
+            </View>
+            
+            <View style={styles.submittedStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>2</Text>
+              </View>
+              <Text style={styles.stepText}>收到 Email 確認信通知</Text>
+            </View>
+            
+            <View style={styles.submittedStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>3</Text>
+              </View>
+              <Text style={styles.stepText}>按預約時間前往收容所</Text>
+            </View>
+            
+            <View style={styles.submittedStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>4</Text>
+              </View>
+              <Text style={styles.stepText}>與 {animalName} 見面並完成領養</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.reminderSection}>
+        <Text style={styles.reminderTitle}>溫馨提醒</Text>
+        <View style={styles.reminderList}>
+          <Text style={styles.reminderItem}>• 請留意您的電子郵件，確認信將在 1-3 個工作天內寄出</Text>
+          <Text style={styles.reminderItem}>• 如超過一週未收到回覆，請主動聯絡收容所</Text>
+          <Text style={styles.reminderItem}>• 領養是一生的承諾，請再次確認您的決定</Text>
+          <Text style={styles.reminderItem}>• 感謝您給 {animalName} 一個溫暖的家</Text>
+        </View>
+      </View>
+
+      <View style={styles.submittedActions}>
+        <TouchableOpacity
+          style={styles.homeButton}
+          onPress={() => router.push('/(tabs)')}
+        >
+          <Text style={styles.homeButtonText}>回到首頁</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
 // 預約成功步驟
 const SuccessStep = ({ 
   formData, 
@@ -686,4 +780,14 @@ const styles = StyleSheet.create({
   datePickerConfirmButton: { backgroundColor: '#F97316', borderColor: '#F97316' },
   datePickerButtonText: { fontSize: 16, color: '#44403C', textAlign: 'center' },
   datePickerConfirmButtonText: { color: '#FFFFFF' },
+  submittedCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 20, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  submittedTitle: { fontSize: 18, fontWeight: 'bold', color: '#1C1917', marginBottom: 16 },
+  submittedContent: { gap: 16 },
+  submittedText: { fontSize: 16, color: '#44403C', lineHeight: 24, marginBottom: 8 },
+  submittedSteps: { gap: 12 },
+  submittedStep: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stepNumber: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#F97316', justifyContent: 'center', alignItems: 'center' },
+  stepNumberText: { fontSize: 12, fontWeight: 'bold', color: '#FFFFFF' },
+  stepText: { fontSize: 14, color: '#44403C', flex: 1 },
+  submittedActions: { gap: 12 },
 });
