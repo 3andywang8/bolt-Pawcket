@@ -8,6 +8,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { User, Heart, Gift, Chrome as Home, Award, Settings, ChevronRight, Bell, CircleHelp as HelpCircle } from 'lucide-react-native';
 
 const ProfileItem = ({
@@ -58,9 +59,18 @@ const StatsCard = ({
 );
 
 export default function ProfileScreen() {
+  const router = useRouter();
+
   const handleItemPress = (item: string) => {
     console.log(`Pressed: ${item}`);
-    // Here you would navigate to the specific screen
+    switch (item) {
+      case 'adoptions':
+        router.push('/AdoptionProgressScreen');
+        break;
+      default:
+        console.log(`Navigation for ${item} not implemented yet`);
+        break;
+    }
   };
 
   return (

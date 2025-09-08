@@ -33,6 +33,7 @@ export default function RootLayout() {
         <Stack.Screen name="TreatSelectionScreen" options={{ headerShown: false }} />
         <Stack.Screen name="PaymentScreen" options={{ headerShown: false }} />
         <Stack.Screen name="PaymentSuccessScreen" options={{ headerShown: false }} />
+        <Stack.Screen name="AdoptionProgressScreen" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
