@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { User, Heart, Gift, Chrome as Home, Award, Settings, ChevronRight, Bell, CircleHelp as HelpCircle } from 'lucide-react-native';
+import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
 
 const ProfileItem = ({
   icon: Icon,
@@ -60,6 +61,14 @@ const StatsCard = ({
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { applications } = useAdoption();
+
+  // 計算統計數據
+  const totalApplications = applications.length;
+  const pendingApplications = applications.filter(app => 
+    app.status === ApplicationStatus.PENDING || 
+    app.status === ApplicationStatus.CONFIRMED
+  ).length;
 
   const handleItemPress = (item: string) => {
     console.log(`Pressed: ${item}`);
@@ -106,7 +115,7 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <StatsCard number="15" label="已收藏" color="#F97316" />
           <StatsCard number="3" label="已捐款" color="#FBBF24" />
-          <StatsCard number="1" label="諮詢中" color="#10B981" />
+          <StatsCard number={pendingApplications.toString()} label="諮詢中" color="#10B981" />
         </View>
 
         {/* My Activities Section */}
@@ -133,7 +142,7 @@ export default function ProfileScreen() {
             icon={Home}
             title="領養進度"
             subtitle="追蹤領養狀況"
-            value="1個"
+            value={`${totalApplications}個`}
             onPress={() => handleItemPress('adoptions')}
           />
           

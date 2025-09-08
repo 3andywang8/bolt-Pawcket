@@ -20,8 +20,9 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.9;
 const CARD_HEIGHT = screenHeight * 0.7;
 
-// Mock animal data
 import ANIMALS_DATA from './datas';
+
+// Mock animal data
 export default function ExploreScreen() {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -256,7 +257,7 @@ export default function ExploreScreen() {
         </Animated.View>
       );
     }
-    if (index == currentIndex + 1) {
+    if (index === currentIndex + 1) {
       return (
         <Animated.View
           key={animal.id}

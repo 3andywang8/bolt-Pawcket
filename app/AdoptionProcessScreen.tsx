@@ -15,6 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Heart, CheckCircle, Calendar, Phone, MapPin } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { useAdoption } from '@/contexts/AdoptionContext';
+import ANIMALS_DATA from './(tabs)/datas';
 
 // 領養流程的四個步驟
 enum AdoptionStep {
@@ -27,6 +29,7 @@ enum AdoptionStep {
 export default function AdoptionProcessScreen() {
   const router = useRouter();
   const { animalId, animalName, animalType, animalShelter, animalShelterPhone } = useLocalSearchParams();
+  const { addApplication } = useAdoption();
   
   const [currentStep, setCurrentStep] = useState<AdoptionStep>(AdoptionStep.GUIDELINES);
   const [formData, setFormData] = useState({
@@ -66,41 +69,71 @@ export default function AdoptionProcessScreen() {
     if (currentStep === AdoptionStep.GUIDELINES) {
       setCurrentStep(AdoptionStep.FORM);
     } else if (currentStep === AdoptionStep.FORM) {
-      // 無條件提交申請，不進行表單驗證
+      // 提交申請並保存到 context
+      submitApplication();
       setCurrentStep(AdoptionStep.SUBMITTED);
     }
   };
 
-  const validateForm = () => {
-    const { name, phone, email, isFirstTime, appointmentDate, appointmentTime } = formData;
+  const submitApplication = () => {
+    // 從 ANIMALS_DATA 中找到動物的完整信息
+    const animalData = ANIMALS_DATA.find(animal => animal.id === animalId);
     
-    if (!name.trim()) {
-      Alert.alert('請填寫姓名');
-      return false;
-    }
-    if (!phone.trim()) {
-      Alert.alert('請填寫電話號碼');
-      return false;
-    }
-    if (!email.trim()) {
-      Alert.alert('請填寫電子郵件');
-      return false;
-    }
-    if (!isFirstTime) {
-      Alert.alert('請選擇是否為第一次飼養');
-      return false;
-    }
-    if (!appointmentDate) {
-      Alert.alert('請選擇預約日期');
-      return false;
-    }
-    if (!appointmentTime) {
-      Alert.alert('請選擇預約時間');
-      return false;
-    }
-    
-    return true;
+    const applicationData = {
+      animalId: animalId as string,
+      animalName: animalName as string,
+      animalType: animalType as 'cat' | 'dog',
+      animalImage: animalData?.image || animalData?.images?.[0] || '',
+      shelter: animalShelter as string,
+      shelterPhone: animalShelterPhone as string,
+      appointmentDate: formData.appointmentDate,
+      appointmentTime: formData.appointmentTime,
+      applicantInfo: {
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        isFirstTime: formData.isFirstTime,
+        petCount: formData.petCount,
+        livingSpace: formData.livingSpace,
+        familyMembers: formData.familyMembers,
+        workSchedule: formData.workSchedule,
+      }
+    };
+
+    // 將申請添加到 context 中
+    addApplication(applicationData);
   };
+
+  // const validateForm = () => {
+  //   const { name, phone, email, isFirstTime, appointmentDate, appointmentTime } = formData;
+  //   
+  //   if (!name.trim()) {
+  //     Alert.alert('請填寫姓名');
+  //     return false;
+  //   }
+  //   if (!phone.trim()) {
+  //     Alert.alert('請填寫電話號碼');
+  //     return false;
+  //   }
+  //   if (!email.trim()) {
+  //     Alert.alert('請填寫電子郵件');
+  //     return false;
+  //   }
+  //   if (!isFirstTime) {
+  //     Alert.alert('請選擇是否為第一次飼養');
+  //     return false;
+  //   }
+  //   if (!appointmentDate) {
+  //     Alert.alert('請選擇預約日期');
+  //     return false;
+  //   }
+  //   if (!appointmentTime) {
+  //     Alert.alert('請選擇預約時間');
+  //     return false;
+  //   }
+  //   
+  //   return true;
+  // };
 
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -285,12 +318,12 @@ const FormStep = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const shelters = [
-    { name: '台北市動物之家', phone: '02-8791-3254' },
-    { name: '新北市板橋動物之家', phone: '02-2959-6353' },
-    { name: '桃園市動物保護教育園區', phone: '03-4861760' },
-    { name: '台中市動物之家南屯園區', phone: '04-23850949' },
-  ];
+  // const shelters = [
+  //   { name: '台北市動物之家', phone: '02-8791-3254' },
+  //   { name: '新北市板橋動物之家', phone: '02-2959-6353' },
+  //   { name: '桃園市動物保護教育園區', phone: '03-4861760' },
+  //   { name: '台中市動物之家南屯園區', phone: '04-23850949' },
+  // ];
 
   const handleDateChange = (event: any, date?: Date) => {
     if (Platform.OS === 'android') {
@@ -601,6 +634,13 @@ const SubmittedStep = ({
 
       <View style={styles.submittedActions}>
         <TouchableOpacity
+          style={styles.progressButton}
+          onPress={() => router.push('/AdoptionProgressScreen')}
+        >
+          <Text style={styles.progressButtonText}>查看領養進度</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
           style={styles.homeButton}
           onPress={() => router.push('/(tabs)')}
         >
@@ -790,4 +830,6 @@ const styles = StyleSheet.create({
   stepNumberText: { fontSize: 12, fontWeight: 'bold', color: '#FFFFFF' },
   stepText: { fontSize: 14, color: '#44403C', flex: 1 },
   submittedActions: { gap: 12 },
+  progressButton: { backgroundColor: '#F97316', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 12 },
+  progressButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 });

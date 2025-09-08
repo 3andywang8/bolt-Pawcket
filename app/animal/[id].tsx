@@ -16,8 +16,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Heart, Share2, MapPin, Clock, Gift, Chrome as Home, Phone, MessageCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-const { width: screenWidth } = Dimensions.get('window');
 import ANIMALS_DATA from '../(tabs)/datas';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 // Mock animal data (same as in explore screen)
 
@@ -25,7 +26,7 @@ export default function AnimalProfileScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [isFavorited, setIsFavorited] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImageIndex] = useState(0);
 
   // Find animal by ID
   const animal = ANIMALS_DATA.find((a) => a.id === id);
@@ -79,14 +80,14 @@ export default function AnimalProfileScreen() {
     }
   };
 
-  const processDonation = (amount: number) => {
-    // Simulate donation success
-    Alert.alert(
-      '感謝你的愛心！',
-      `${animal.name} 正在享用你的愛心！\n捐款金額: NT$${amount}`,
-      [{ text: '太棒了！', onPress: triggerHapticFeedback }]
-    );
-  };
+  // const processDonation = (amount: number) => {
+  //   // Simulate donation success
+  //   Alert.alert(
+  //     '感謝你的愛心！',
+  //     `${animal.name} 正在享用你的愛心！\n捐款金額: NT$${amount}`,
+  //     [{ text: '太棒了！', onPress: triggerHapticFeedback }]
+  //   );
+  // };
 
   const handleAdoptionInquiry = () => {
     console.log('handleAdoptionInquiry function called!');

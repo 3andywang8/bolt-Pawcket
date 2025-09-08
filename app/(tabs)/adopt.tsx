@@ -18,7 +18,7 @@ import ALL_ANIMALS from './datas';
 
 const ITEMS_PER_PAGE = 2;
 
-const AnimalCard = React.memo(({ animal }: { animal: any }) => {
+const AnimalCard = React.memo(function AnimalCard({ animal }: { animal: any }) {
   const router = useRouter();
   return (
     <TouchableOpacity

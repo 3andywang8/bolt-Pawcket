@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { AdoptionProvider } from '@/contexts/AdoptionContext';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -26,17 +27,18 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <AdoptionProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="animal/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="TreatSelectionScreen" options={{ headerShown: false }} />
         <Stack.Screen name="PaymentScreen" options={{ headerShown: false }} />
         <Stack.Screen name="PaymentSuccessScreen" options={{ headerShown: false }} />
+        <Stack.Screen name="AdoptionProcessScreen" options={{ headerShown: false }} />
         <Stack.Screen name="AdoptionProgressScreen" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
-    </>
+    </AdoptionProvider>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -15,80 +15,18 @@ import {
   Calendar, 
   Clock, 
   CheckCircle, 
-  Mail, 
   Phone, 
   MapPin,
   AlertCircle,
   Heart
 } from 'lucide-react-native';
+import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
 
-// 申請狀態枚舉
-enum ApplicationStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  REJECTED = 'rejected',
-  COMPLETED = 'completed',
-}
-
-// 申請記錄介面
-interface AdoptionApplication {
-  id: string;
-  animalName: string;
-  animalType: 'cat' | 'dog';
-  animalImage: string;
-  applicationDate: string;
-  status: ApplicationStatus;
-  shelter: string;
-  shelterPhone: string;
-  appointmentDate?: string;
-  appointmentTime?: string;
-  notes?: string;
-}
+// 使用從 context 導入的類型
 
 export default function AdoptionProgressScreen() {
   const router = useRouter();
-
-  // 模擬申請記錄數據
-  const [applications] = useState<AdoptionApplication[]>([
-    {
-      id: '1',
-      animalName: '混種貓 6001',
-      animalType: 'cat',
-      animalImage: 'https://www.pet.gov.tw/upload/pic/1754552120967.png',
-      applicationDate: '2024/01/15',
-      status: ApplicationStatus.CONFIRMED,
-      shelter: '新竹縣動物保護教育園區',
-      shelterPhone: '03-5519548',
-      appointmentDate: '2024/01/22',
-      appointmentTime: '上午 9:00-12:00',
-      notes: '請攜帶身分證件及相關文件'
-    },
-    {
-      id: '2',
-      animalName: '狗狗 6004',
-      animalType: 'dog',
-      animalImage: 'https://www.pet.gov.tw/upload/pic/1754555310183.png',
-      applicationDate: '2024/01/18',
-      status: ApplicationStatus.PENDING,
-      shelter: '台北市動物之家',
-      shelterPhone: '02-8791-3254',
-      appointmentDate: '2024/01/25',
-      appointmentTime: '下午 14:00-17:00',
-    },
-    {
-      id: '3',
-      animalName: '橘貓小花',
-      animalType: 'cat',
-      animalImage: 'https://images.pexels.com/photos/2071873/pexels-photo-2071873.jpeg',
-      applicationDate: '2024/01/10',
-      status: ApplicationStatus.COMPLETED,
-      shelter: '桃園市動物保護教育園區',
-      shelterPhone: '03-4861760',
-      appointmentDate: '2024/01/17',
-      appointmentTime: '假日 10:00-16:00',
-      notes: '領養成功！小花已經回到溫暖的家'
-    }
-  ]);
+  const { applications } = useAdoption();
 
   const getStatusInfo = (status: ApplicationStatus) => {
     switch (status) {
@@ -141,7 +79,7 @@ export default function AdoptionProgressScreen() {
     );
   };
 
-  const ApplicationCard = ({ application }: { application: AdoptionApplication }) => {
+  const ApplicationCard = ({ application }: { application: any }) => {
     const statusInfo = getStatusInfo(application.status);
     const animalTypeText = application.animalType === 'cat' ? '貓咪' : '狗狗';
 
