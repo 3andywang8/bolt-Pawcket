@@ -90,18 +90,19 @@ export default function AnimalProfileScreen() {
 
   const handleAdoptionInquiry = () => {
     console.log('handleAdoptionInquiry function called!');
-    Alert.alert(
-      '領養諮詢',
-      '領養是一生的承諾，請確實考慮後再提出申請。',
-      [
-        { text: '我瞭解', onPress: () => showAdoptionForm() },
-        { text: '再想想', style: 'cancel' },
-      ]
-    );
-  };
-
-  const showAdoptionForm = () => {
-    Alert.alert('領養申請', '將為您開啟領養申請表單...');
+    triggerHapticFeedback();
+    
+    // 跳轉到領養流程頁面
+    router.push({
+      pathname: '/AdoptionProcessScreen',
+      params: {
+        animalId: animal.id,
+        animalName: animal.name,
+        animalType: animal.type,
+        animalShelter: animal.shelter,
+        animalShelterPhone: animal.shelterPhone,
+      },
+    });
   };
 
   const handleCall = () => {

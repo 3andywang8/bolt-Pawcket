@@ -11,6 +11,7 @@ import {
   Pressable,
   Dimensions,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -27,6 +28,8 @@ import {
 } from 'lucide-react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as Haptics from 'expo-haptics';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
 import { smartShare } from '../utils/share';
 
 export default function PaymentSuccessScreen() {
@@ -237,9 +240,78 @@ export default function PaymentSuccessScreen() {
     }
   };
 
-  const handleDownload = () => {
-    // 下載功能
-    console.log('下載影片');
+  const handleDownload = async () => {
+    // 檢查是否為 Web 環境
+    if (Platform.OS === 'web') {
+      Alert.alert('下載功能', '此功能僅在手機 App 上提供');
+      return;
+    }
+
+    try {
+      // 請求媒體庫權限
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('權限不足', '需要相簿存取權限才能下載影片');
+        return;
+      }
+
+      // 顯示下載開始提示
+      Alert.alert('開始下載', '影片正在下載中，請稍候...');
+
+      // 獲取當前影片的本地路徑
+      const videoUri = videoSource;
+      
+      // 生成檔案名稱
+      const animalType = treatId && typeof treatId === 'string' && treatId.startsWith('d') ? 'dog' : 'cat';
+      const fileName = `pawcket_${animalType}_${treatId}_${Date.now()}.mp4`;
+      
+      // 創建下載目錄
+      const downloadDir = `${FileSystem.documentDirectory}downloads/`;
+      await FileSystem.makeDirectoryAsync(downloadDir, { intermediates: true });
+      
+      // 目標檔案路徑
+      const targetPath = `${downloadDir}${fileName}`;
+
+      // 複製影片檔案到下載目錄
+      await FileSystem.copyAsync({
+        from: videoUri,
+        to: targetPath,
+      });
+
+      // 將檔案保存到相簿
+      const asset = await MediaLibrary.createAssetAsync(targetPath);
+      
+      // 創建或獲取 Pawcket 相簿
+      let album = await MediaLibrary.getAlbumAsync('Pawcket');
+      if (album == null) {
+        album = await MediaLibrary.createAlbumAsync('Pawcket', asset, false);
+      } else {
+        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+      }
+
+      // 清理臨時檔案
+      await FileSystem.deleteAsync(targetPath, { idempotent: true });
+
+      // 顯示成功提示
+      Alert.alert(
+        '下載成功！', 
+        '影片已保存到相簿的 Pawcket 資料夾中',
+        [{ text: '確定', style: 'default' }]
+      );
+
+      // 觸發成功震動回饋
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
+    } catch (error) {
+      console.error('下載失敗:', error);
+      Alert.alert(
+        '下載失敗', 
+        '無法下載影片，請檢查儲存空間或稍後再試',
+        [{ text: '確定', style: 'default' }]
+      );
+    }
   };
 
   const animalName = animalType === 'cat' ? '貓咪' : '狗狗';
@@ -248,7 +320,7 @@ export default function PaymentSuccessScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#F97316" />
 
-      {/* 成功標題區域 */}
+      {/* 成功標題區域 - 固定在頂部 */}
       <View style={styles.successHeader}>
         <Animated.View
           onStartShouldSetResponder={() => true}
@@ -271,103 +343,111 @@ export default function PaymentSuccessScreen() {
         </Animated.View>
       </View>
 
-      {/* 即時影像區域 */}
-      <View style={styles.videoContainer}>
-        <Text style={styles.videoTitle}>即時影像</Text>
-        <View style={styles.videoWrapper}>
-          <VideoView
-            style={styles.video}
-            player={player}
-            nativeControls={false}
-            allowsFullscreen={false}
-            allowsPictureInPicture={false}
-            contentFit="cover"
-          />
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE</Text>
+      {/* 可滾動內容區域 */}
+      <ScrollView 
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
+        {/* 即時影像區域 */}
+        <View style={styles.videoContainer}>
+          <Text style={styles.videoTitle}>即時影像</Text>
+          <View style={styles.videoWrapper}>
+            <VideoView
+              style={styles.video}
+              player={player}
+              nativeControls={false}
+              allowsFullscreen={false}
+              allowsPictureInPicture={false}
+              contentFit="cover"
+            />
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
+          </View>
+          <Text style={styles.videoDescription}>
+            {animalName}正在開心地享用你贈送的{treatName}！
+          </Text>
+
+          {/* 影片操作按鈕 */}
+          <View style={styles.videoActions}>
+            <TouchableOpacity
+              style={styles.videoActionButton}
+              onPress={handleBookmark}
+            >
+              <Bookmark size={18} color="#78716C" strokeWidth={2} />
+              <Text style={styles.videoActionText}>收藏</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.videoActionButton}
+              onPress={handleVideoShare}
+            >
+              <Share2 size={18} color="#78716C" strokeWidth={2} />
+              <Text style={styles.videoActionText}>分享</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.videoActionButton}
+              onPress={handleDownload}
+            >
+              <Download size={18} color="#78716C" strokeWidth={2} />
+              <Text style={styles.videoActionText}>下載</Text>
+            </TouchableOpacity>
           </View>
         </View>
-        <Text style={styles.videoDescription}>
-          {animalName}正在開心地享用你贈送的{treatName}！
-        </Text>
 
-        {/* 影片操作按鈕 */}
-        <View style={styles.videoActions}>
-          <TouchableOpacity
-            style={styles.videoActionButton}
-            onPress={handleBookmark}
-          >
-            <Bookmark size={18} color="#78716C" strokeWidth={2} />
-            <Text style={styles.videoActionText}>收藏</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.videoActionButton}
-            onPress={handleVideoShare}
-          >
-            <Share2 size={18} color="#78716C" strokeWidth={2} />
-            <Text style={styles.videoActionText}>分享</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.videoActionButton}
-            onPress={handleDownload}
-          >
-            <Download size={18} color="#78716C" strokeWidth={2} />
-            <Text style={styles.videoActionText}>下載</Text>
-          </TouchableOpacity>
+        {/* 支付詳情 */}
+        <View style={styles.paymentDetails}>
+          <Text style={styles.detailsTitle}>支付詳情</Text>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>零食</Text>
+            <Text style={styles.detailValue}>{treatName}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>金額</Text>
+            <Text style={styles.detailValue}>NT$ {price}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>支付方式</Text>
+            <Text style={styles.detailValue}>
+              {paymentMethod === 'apple-pay' && 'Apple Pay'}
+              {paymentMethod === 'google-pay' && 'Google Pay'}
+              {paymentMethod === 'line-pay' && 'LINE Pay'}
+              {paymentMethod === 'credit-card' && '信用卡'}
+            </Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>時間</Text>
+            <Text style={styles.detailValue}>
+              {new Date().toLocaleString('zh-TW')}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      {/* 支付詳情 */}
-      <View style={styles.paymentDetails}>
-        <Text style={styles.detailsTitle}>支付詳情</Text>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>零食</Text>
-          <Text style={styles.detailValue}>{treatName}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>金額</Text>
-          <Text style={styles.detailValue}>NT$ {price}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>支付方式</Text>
-          <Text style={styles.detailValue}>
-            {paymentMethod === 'apple-pay' && 'Apple Pay'}
-            {paymentMethod === 'google-pay' && 'Google Pay'}
-            {paymentMethod === 'line-pay' && 'LINE Pay'}
-            {paymentMethod === 'credit-card' && '信用卡'}
+        {/* 感謝訊息 */}
+        <View style={styles.thankYouMessage}>
+          <Text style={styles.thankYouTitle}>你的愛心讓世界更美好 💝</Text>
+          <Text style={styles.thankYouText}>
+            每一次的投餵都是對流浪動物最溫暖的關懷，謝謝你成為牠們生命中的天使。
           </Text>
         </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>時間</Text>
-          <Text style={styles.detailValue}>
-            {new Date().toLocaleString('zh-TW')}
-          </Text>
+
+        {/* 底部按鈕 */}
+        <View style={styles.bottomActions}>
+          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+            <Share2 size={20} color="#F97316" strokeWidth={2} />
+            <Text style={styles.shareButtonText}>分享愛心</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.homeButton} onPress={handleBackToHome}>
+            <Home size={20} color="#FFFFFF" strokeWidth={2} />
+            <Text style={styles.homeButtonText}>回到首頁</Text>
+          </TouchableOpacity>
         </View>
-      </View>
-
-      {/* 感謝訊息 */}
-      <View style={styles.thankYouMessage}>
-        <Text style={styles.thankYouTitle}>你的愛心讓世界更美好 💝</Text>
-        <Text style={styles.thankYouText}>
-          每一次的投餵都是對流浪動物最溫暖的關懷，謝謝你成為牠們生命中的天使。
-        </Text>
-      </View>
-
-      {/* 底部按鈕 */}
-      <View style={styles.bottomActions}>
-        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-          <Share2 size={20} color="#F97316" strokeWidth={2} />
-          <Text style={styles.shareButtonText}>分享愛心</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.homeButton} onPress={handleBackToHome}>
-          <Home size={20} color="#FFFFFF" strokeWidth={2} />
-          <Text style={styles.homeButtonText}>回到首頁</Text>
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       {/* 分享 Modal */}
       <Modal
@@ -485,7 +565,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FEFDFB',
-    position: 'relative',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   successHeader: {
     backgroundColor: '#F97316',
