@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Filter, MapPin, Heart, Clock } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
 
 import ALL_ANIMALS from './datas';
 
@@ -65,16 +66,25 @@ const AnimalCard = React.memo(function AnimalCard({ animal }: { animal: any }) {
 });
 
 export default function AdoptScreen() {
+  const { applications } = useAdoption();
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [displayedAnimals, setDisplayedAnimals] = useState<any[]>([]);
   const [shuffledAnimals, setShuffledAnimals] = useState<any[]>([]);
 
   useEffect(() => {
-    // Shuffle the array once on component mount to ensure a different order each time
-    const shuffled = [...ALL_ANIMALS].sort(() => Math.random() - 0.5);
+    // 過濾已完成領養的寵物，然後隨機排序
+    const completedAdoptionIds = applications
+      .filter(app => app.status === ApplicationStatus.COMPLETED)
+      .map(app => app.animalId);
+    
+    const availableAnimals = ALL_ANIMALS.filter(animal => 
+      !completedAdoptionIds.includes(animal.id)
+    );
+    
+    const shuffled = [...availableAnimals].sort(() => Math.random() - 0.5);
     setShuffledAnimals(shuffled);
-  }, []);
+  }, [applications]);
 
   const filteredAnimals = useMemo(() => {
     return shuffledAnimals.filter(animal => {

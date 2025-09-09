@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,9 +24,60 @@ import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
 
 // 使用從 context 導入的類型
 
+type FilterType = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
+
 export default function AdoptionProgressScreen() {
   const router = useRouter();
   const { applications } = useAdoption();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
+  const itemsPerPage = 5;
+
+  // 根據篩選條件過濾申請記錄
+  const filteredApplications = useMemo(() => {
+    switch (selectedFilter) {
+      case 'pending':
+        return applications.filter(app => app.status === ApplicationStatus.PENDING);
+      case 'confirmed':
+        return applications.filter(app => app.status === ApplicationStatus.CONFIRMED);
+      case 'completed':
+        return applications.filter(app => app.status === ApplicationStatus.COMPLETED);
+      case 'cancelled':
+        return applications.filter(app => app.status === ApplicationStatus.CANCELLED);
+      default:
+        return applications;
+    }
+  }, [applications, selectedFilter]);
+
+  // 計算分頁資料
+  const { totalPages, paginatedApplications, startIndex, endIndex } = useMemo(() => {
+    const totalPages = Math.ceil(filteredApplications.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedApplications = filteredApplications.slice(startIndex, endIndex);
+    
+    return { totalPages, paginatedApplications, startIndex, endIndex };
+  }, [filteredApplications, currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleFilterChange = (filter: FilterType) => {
+    setSelectedFilter(filter);
+    setCurrentPage(1); // 切換篩選時重設到第一頁
+  };
+
+  // 計算各狀態的數量
+  const statusCounts = useMemo(() => {
+    return {
+      total: applications.length,
+      pending: applications.filter(app => app.status === ApplicationStatus.PENDING).length,
+      confirmed: applications.filter(app => app.status === ApplicationStatus.CONFIRMED).length,
+      completed: applications.filter(app => app.status === ApplicationStatus.COMPLETED).length,
+      cancelled: applications.filter(app => app.status === ApplicationStatus.CANCELLED).length
+    };
+  }, [applications]);
 
   const getStatusInfo = (status: ApplicationStatus) => {
     switch (status) {
@@ -57,6 +108,13 @@ export default function AdoptionProgressScreen() {
           color: '#8B5CF6',
           bgColor: '#EDE9FE',
           icon: <Heart size={16} color="#8B5CF6" fill="#8B5CF6" />
+        };
+      case ApplicationStatus.CANCELLED:
+        return {
+          text: '已取消',
+          color: '#6B7280',
+          bgColor: '#F3F4F6',
+          icon: <AlertCircle size={16} color="#6B7280" />
         };
       default:
         return {
@@ -141,8 +199,11 @@ export default function AdoptionProgressScreen() {
             <Text style={styles.contactButtonText}>聯絡收容所</Text>
           </TouchableOpacity>
 
-          {application.status === ApplicationStatus.CONFIRMED && (
-            <TouchableOpacity style={styles.appointmentButton}>
+          {application.status !== ApplicationStatus.COMPLETED && (
+            <TouchableOpacity 
+              style={styles.appointmentButton}
+              onPress={() => router.push(`/animal/${application.animalId}`)}
+            >
               <Calendar size={16} color="#FFFFFF" />
               <Text style={styles.appointmentButtonText}>查看預約</Text>
             </TouchableOpacity>
@@ -166,34 +227,119 @@ export default function AdoptionProgressScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* 統計概覽 */}
+        {/* 統計概覽 - 改為篩選按鈕 */}
         <View style={styles.summarySection}>
           <Text style={styles.summaryTitle}>申請概覽</Text>
           <View style={styles.summaryCards}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryNumber}>{applications.length}</Text>
-              <Text style={styles.summaryLabel}>總申請數</Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryNumber}>
-                {applications.filter(app => app.status === ApplicationStatus.PENDING).length}
+            <TouchableOpacity
+              style={[
+                styles.summaryCard,
+                selectedFilter === 'all' && styles.activeSummaryCard
+              ]}
+              onPress={() => handleFilterChange('all')}
+            >
+              <Text style={[
+                styles.summaryNumber,
+                selectedFilter === 'all' && styles.activeSummaryNumber
+              ]}>
+                {statusCounts.total}
               </Text>
-              <Text style={styles.summaryLabel}>等待中</Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryNumber}>
-                {applications.filter(app => app.status === ApplicationStatus.COMPLETED).length}
+              <Text style={[
+                styles.summaryLabel,
+                selectedFilter === 'all' && styles.activeSummaryLabel
+              ]}>總申請數</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.summaryCard,
+                selectedFilter === 'pending' && styles.activeSummaryCard
+              ]}
+              onPress={() => handleFilterChange('pending')}
+            >
+              <Text style={[
+                styles.summaryNumber,
+                selectedFilter === 'pending' && styles.activeSummaryNumber
+              ]}>
+                {statusCounts.pending}
               </Text>
-              <Text style={styles.summaryLabel}>已完成</Text>
-            </View>
+              <Text style={[
+                styles.summaryLabel,
+                selectedFilter === 'pending' && styles.activeSummaryLabel
+              ]}>等待中</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.summaryCard,
+                selectedFilter === 'confirmed' && styles.activeSummaryCard
+              ]}
+              onPress={() => handleFilterChange('confirmed')}
+            >
+              <Text style={[
+                styles.summaryNumber,
+                selectedFilter === 'confirmed' && styles.activeSummaryNumber
+              ]}>
+                {statusCounts.confirmed}
+              </Text>
+              <Text style={[
+                styles.summaryLabel,
+                selectedFilter === 'confirmed' && styles.activeSummaryLabel
+              ]}>待前往</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.summaryCard,
+                selectedFilter === 'completed' && styles.activeSummaryCard
+              ]}
+              onPress={() => handleFilterChange('completed')}
+            >
+              <Text style={[
+                styles.summaryNumber,
+                selectedFilter === 'completed' && styles.activeSummaryNumber
+              ]}>
+                {statusCounts.completed}
+              </Text>
+              <Text style={[
+                styles.summaryLabel,
+                selectedFilter === 'completed' && styles.activeSummaryLabel
+              ]}>已完成</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.summaryCard,
+                selectedFilter === 'cancelled' && styles.activeSummaryCard
+              ]}
+              onPress={() => handleFilterChange('cancelled')}
+            >
+              <Text style={[
+                styles.summaryNumber,
+                selectedFilter === 'cancelled' && styles.activeSummaryNumber
+              ]}>
+                {statusCounts.cancelled}
+              </Text>
+              <Text style={[
+                styles.summaryLabel,
+                selectedFilter === 'cancelled' && styles.activeSummaryLabel
+              ]}>已取消</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
         {/* 申請記錄列表 */}
         <View style={styles.applicationsSection}>
-          <Text style={styles.sectionTitle}>申請記錄</Text>
-          {applications.length > 0 ? (
-            applications.map((application) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>申請記錄</Text>
+            {filteredApplications.length > 0 && (
+              <Text style={styles.recordCount}>
+                顯示第 {startIndex + 1}-{Math.min(endIndex, filteredApplications.length)} 筆，共 {filteredApplications.length} 筆
+              </Text>
+            )}
+          </View>
+          {filteredApplications.length > 0 ? (
+            paginatedApplications.map((application) => (
               <ApplicationCard key={application.id} application={application} />
             ))
           ) : (
@@ -203,6 +349,34 @@ export default function AdoptionProgressScreen() {
               <Text style={styles.emptyText}>
                 當您提交領養申請後，相關進度將會顯示在這裡
               </Text>
+            </View>
+          )}
+          
+          {/* 分頁導航 */}
+          {totalPages > 1 && (
+            <View style={styles.pagination}>
+              {Array.from({ length: totalPages }, (_, index) => {
+                const page = index + 1;
+                return (
+                  <TouchableOpacity
+                    key={page}
+                    style={[
+                      styles.pageButton,
+                      currentPage === page && styles.activePageButton
+                    ]}
+                    onPress={() => handlePageChange(page)}
+                  >
+                    <Text
+                      style={[
+                        styles.pageButtonText,
+                        currentPage === page && styles.activePageButtonText
+                      ]}
+                    >
+                      {page}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </View>
@@ -252,39 +426,67 @@ const styles = StyleSheet.create({
   },
   summaryCards: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   summaryCard: {
-    flex: 1,
+    width: '48%',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    marginBottom: 8,
+  },
+  activeSummaryCard: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F97316',
+    shadowColor: '#F97316',
+    shadowOpacity: 0.2,
   },
   summaryNumber: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#F97316',
     marginBottom: 4,
   },
+  activeSummaryNumber: {
+    color: '#EA580C',
+  },
   summaryLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#78716C',
     textAlign: 'center',
+    fontWeight: '500',
+  },
+  activeSummaryLabel: {
+    color: '#EA580C',
+    fontWeight: '600',
   },
   applicationsSection: {
     marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1C1917',
-    marginBottom: 16,
+  },
+  recordCount: {
+    fontSize: 12,
+    color: '#78716C',
+    fontWeight: '500',
   },
   applicationCard: {
     backgroundColor: '#FFFFFF',
@@ -418,5 +620,39 @@ const styles = StyleSheet.create({
     color: '#78716C',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 8,
+  },
+  pageButton: {
+    minWidth: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  activePageButton: {
+    backgroundColor: '#F97316',
+    borderColor: '#F97316',
+  },
+  pageButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  activePageButtonText: {
+    color: '#FFFFFF',
   },
 });

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Filter, Heart, Star, MapPin } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.9;
@@ -25,16 +26,29 @@ import ANIMALS_DATA from './datas';
 // Mock animal data
 export default function ExploreScreen() {
   const router = useRouter();
+  const { applications } = useAdoption();
   const [currentIndex, setCurrentIndex] = useState(0);
-  // 穩定的隨機排序資料：只在首次掛載時生成，且不會改動原始資料
+  
+  // 過濾已完成領養的寵物，然後隨機排序
   const animals = React.useMemo(() => {
-    const copy = [...ANIMALS_DATA];
+    // 取得已完成領養的寵物ID
+    const completedAdoptionIds = applications
+      .filter(app => app.status === ApplicationStatus.COMPLETED)
+      .map(app => app.animalId);
+    
+    // 過濾出已完成領養的寵物
+    const availableAnimals = ANIMALS_DATA.filter(animal => 
+      !completedAdoptionIds.includes(animal.id)
+    );
+    
+    // 隨機排序
+    const copy = [...availableAnimals];
     for (let i = copy.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [copy[i], copy[j]] = [copy[j], copy[i]];
     }
     return copy;
-  }, []);
+  }, [applications]);
   const position = useRef(new Animated.ValueXY()).current;
   const rotate = useRef(new Animated.Value(0)).current;
   const nextCardOpacity = useRef(new Animated.Value(0.8)).current;

@@ -13,10 +13,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Heart, Share2, MapPin, Clock, Gift, Chrome as Home, Phone, MessageCircle } from 'lucide-react-native';
+import { ArrowLeft, Heart, Share2, MapPin, Clock, Gift, Chrome as Home, Phone, MessageCircle, CheckCircle, AlertCircle, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 import ANIMALS_DATA from '../(tabs)/datas';
+import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -25,11 +26,17 @@ const { width: screenWidth } = Dimensions.get('window');
 export default function AnimalProfileScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { applications, canCancelApplication, cancelApplication } = useAdoption();
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentImageIndex] = useState(0);
 
   // Find animal by ID
   const animal = ANIMALS_DATA.find((a) => a.id === id);
+  
+  // Check if this animal has an active application (not cancelled)
+  const existingApplication = applications.find(app => 
+    app.animalId === id && app.status !== ApplicationStatus.CANCELLED
+  );
 
   if (!animal) {
     return (
@@ -93,21 +100,118 @@ export default function AnimalProfileScreen() {
     console.log('handleAdoptionInquiry function called!');
     triggerHapticFeedback();
     
-    // 跳轉到領養流程頁面
-    router.push({
-      pathname: '/AdoptionProcessScreen',
-      params: {
-        animalId: animal.id,
-        animalName: animal.name,
-        animalType: animal.type,
-        animalShelter: animal.shelter,
-        animalShelterPhone: animal.shelterPhone,
-      },
-    });
+    if (existingApplication) {
+      // 如果已有有效申請，跳轉到領養進度頁面
+      router.push('/AdoptionProgressScreen');
+    } else {
+      // 如果沒有有效申請（包括從未申請或已取消），跳轉到領養流程頁面
+      router.push({
+        pathname: '/AdoptionProcessScreen',
+        params: {
+          animalId: animal.id,
+          animalName: animal.name,
+          animalType: animal.type,
+          animalShelter: animal.shelter,
+          animalShelterPhone: animal.shelterPhone,
+        },
+      });
+    }
   };
 
   const handleCall = () => {
     Alert.alert('聯繫收容所', `撥打 ${animal.shelterPhone}`);
+  };
+
+  // 取得申請狀態資訊
+  const getApplicationStatusInfo = () => {
+    if (!existingApplication) return null;
+    
+    switch (existingApplication.status) {
+      case ApplicationStatus.PENDING:
+        return {
+          text: '等待確認信中',
+          icon: <Clock size={16} color="#F59E0B" />,
+          bgColor: '#FEF3C7',
+          textColor: '#F59E0B'
+        };
+      case ApplicationStatus.CONFIRMED:
+        return {
+          text: '已收到確認信',
+          subtitle: '等待前往互動',
+          icon: <CheckCircle size={16} color="#10B981" />,
+          bgColor: '#D1FAE5',
+          textColor: '#10B981'
+        };
+      case ApplicationStatus.REJECTED:
+        return {
+          text: '申請未通過',
+          icon: <AlertCircle size={16} color="#EF4444" />,
+          bgColor: '#FEE2E2',
+          textColor: '#EF4444'
+        };
+      case ApplicationStatus.COMPLETED:
+        return {
+          text: '領養完成',
+          icon: <Heart size={16} color="#8B5CF6" fill="#8B5CF6" />,
+          bgColor: '#EDE9FE',
+          textColor: '#8B5CF6'
+        };
+      default:
+        return null;
+    }
+  };
+  
+  const statusInfo = getApplicationStatusInfo();
+  
+  // 處理取消申請
+  const handleCancelApplication = () => {
+    console.log('[DEBUG] handleCancelApplication called');
+    console.log('[DEBUG] existingApplication:', existingApplication);
+    
+    if (!existingApplication) {
+      console.log('[DEBUG] No existing application found');
+      return;
+    }
+    
+    const cancelCheck = canCancelApplication(existingApplication.id);
+    console.log('[DEBUG] cancelCheck result:', cancelCheck);
+    
+    if (!cancelCheck.canCancel) {
+      console.log('[DEBUG] Cannot cancel application:', cancelCheck.reason);
+      Alert.alert('無法取消', cancelCheck.reason || '無法取消此申請');
+      return;
+    }
+    
+    // 顯示聲明和確認
+    Alert.alert(
+      '取消申請聲明',
+      '同個使用者帳號最多只能取消3次，超過3次即會被加入黑名單，終身無法再透過APP申請領養，只能線上投餵。\n\n當預約時間少於24小時時，就不可透過APP取消申請，必須親自打電話聯繫收容所取消，同時也會被記錄起來，打電話取消也算在3次的額度裡面。\n\n是否願意遵守上述規定並取消此申請？',
+      [
+        { text: '取消', style: 'cancel' },
+        { 
+          text: '確認取消', 
+          style: 'destructive',
+          onPress: async () => {
+            console.log('[DEBUG] User confirmed cancellation');
+            const result = await cancelApplication(existingApplication.id, 'user');
+            console.log('[DEBUG] Cancellation result:', result);
+            
+            if (result.success) {
+              Alert.alert(
+                '取消成功',
+                result.message,
+                [{
+                  text: '確認',
+                  onPress: () => router.push('/AdoptionProgressScreen')
+                }]
+              );
+            } else {
+              Alert.alert('取消失敗', result.message);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const InfoRow = ({ label, value }: { label: string; value: string }) => (
@@ -200,22 +304,58 @@ export default function AnimalProfileScreen() {
             </View>
           </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.donationButton}
-              onPress={handleDonation}>
-              <Gift size={20} color="#FFFFFF" strokeWidth={2} />
-              <Text style={styles.donationButtonText}>線上投餵</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.adoptButton}
-              onPress={handleAdoptionInquiry}>
-              <Home size={20} color="#FFFFFF" strokeWidth={2} />
-              <Text style={styles.adoptButtonText}>我想了解領養</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Application Status or Action Buttons */}
+          {existingApplication ? (
+            <View style={styles.statusSection}>
+              <View style={[styles.statusCard, { backgroundColor: statusInfo?.bgColor }]}>
+                <View style={styles.statusHeader}>
+                  {statusInfo?.icon}
+                  <Text style={[styles.statusMainText, { color: statusInfo?.textColor }]}>
+                    {statusInfo?.text}
+                  </Text>
+                </View>
+                {statusInfo?.subtitle && (
+                  <Text style={[styles.statusSubtext, { color: statusInfo?.textColor }]}>
+                    {statusInfo.subtitle}
+                  </Text>
+                )}
+                <View style={styles.statusActions}>
+                  <TouchableOpacity
+                    style={styles.statusButton}
+                    onPress={() => router.push('/AdoptionProgressScreen')}
+                  >
+                    <Text style={styles.statusButtonText}>查看詳細進度</Text>
+                  </TouchableOpacity>
+                  
+                  {existingApplication.status !== ApplicationStatus.COMPLETED && existingApplication.status !== ApplicationStatus.CANCELLED && (
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={handleCancelApplication}
+                    >
+                      <X size={16} color="#EF4444" />
+                      <Text style={styles.cancelButtonText}>取消申請</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.donationButton}
+                onPress={handleDonation}>
+                <Gift size={20} color="#FFFFFF" strokeWidth={2} />
+                <Text style={styles.donationButtonText}>線上投餵</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.adoptButton}
+                onPress={handleAdoptionInquiry}>
+                <Home size={20} color="#FFFFFF" strokeWidth={2} />
+                <Text style={styles.adoptButtonText}>我想了解領養</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Personality Tags */}
           <View style={styles.section}>
@@ -300,8 +440,17 @@ export default function AnimalProfileScreen() {
         <TouchableOpacity
           style={styles.bottomAdoptButton}
           onPress={handleAdoptionInquiry}>
-          <MessageCircle size={20} color="#FFFFFF" strokeWidth={2} />
-          <Text style={styles.bottomButtonText}>諮詢領養</Text>
+          {existingApplication ? (
+            <>
+              {statusInfo?.icon && React.cloneElement(statusInfo.icon, { size: 20, color: '#FFFFFF' })}
+              <Text style={styles.bottomButtonText}>{statusInfo?.text}</Text>
+            </>
+          ) : (
+            <>
+              <MessageCircle size={20} color="#FFFFFF" strokeWidth={2} />
+              <Text style={styles.bottomButtonText}>諮詢領養</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -418,6 +567,67 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 32,
+  },
+  statusSection: {
+    marginBottom: 32,
+  },
+  statusCard: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(249, 115, 22, 0.2)',
+  },
+  statusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  statusMainText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statusSubtext: {
+    fontSize: 14,
+    marginBottom: 16,
+    opacity: 0.8,
+  },
+  statusActions: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  statusButton: {
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    borderWidth: 1,
+    borderColor: '#F97316',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+  },
+  statusButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F97316',
+    textAlign: 'center',
+  },
+  cancelButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#EF4444',
   },
   donationButton: {
     flex: 1,

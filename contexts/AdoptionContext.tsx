@@ -6,6 +6,7 @@ export enum ApplicationStatus {
   CONFIRMED = 'confirmed', 
   REJECTED = 'rejected',
   COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
 }
 
 // 申請記錄介面
@@ -34,10 +35,21 @@ export interface AdoptionApplication {
   };
 }
 
+// 用戶資料介面
+export interface UserProfile {
+  id: string;
+  cancellationCount: number;
+  isBlacklisted: boolean;
+  lastCancellationDate?: string;
+}
+
 interface AdoptionContextType {
   applications: AdoptionApplication[];
+  userProfile: UserProfile;
   addApplication: (application: Omit<AdoptionApplication, 'id' | 'applicationDate' | 'status'>) => void;
   updateApplicationStatus: (id: string, status: ApplicationStatus, notes?: string) => void;
+  cancelApplication: (id: string, reason: 'user' | 'phone') => Promise<{ success: boolean; message: string }>;
+  canCancelApplication: (applicationId: string) => { canCancel: boolean; reason?: string };
   getApplicationById: (id: string) => AdoptionApplication | undefined;
   getApplicationsByStatus: (status: ApplicationStatus) => AdoptionApplication[];
 }
@@ -53,6 +65,13 @@ export const useAdoption = () => {
 };
 
 export const AdoptionProvider = ({ children }: { children: ReactNode }) => {
+  // 用戶資料（之後可以從 AsyncStorage 或其他持久化存儲中讀取）
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    id: 'user123',
+    cancellationCount: 0,
+    isBlacklisted: false,
+  });
+
   // 初始化一些示例數據（之後可以從 AsyncStorage 或其他持久化存儲中讀取）
   const [applications, setApplications] = useState<AdoptionApplication[]>([
     {
@@ -158,10 +177,104 @@ export const AdoptionProvider = ({ children }: { children: ReactNode }) => {
     return applications.filter(app => app.status === status);
   };
 
+  // 檢查是否可以取消申請
+  const canCancelApplication = (applicationId: string) => {
+    const application = applications.find(app => app.id === applicationId);
+    
+    if (!application) {
+      return { canCancel: false, reason: '找不到申請記錄' };
+    }
+
+    if (userProfile.isBlacklisted) {
+      return { canCancel: false, reason: '您已被列入黑名單，無法取消申請' };
+    }
+
+    if (application.status === ApplicationStatus.COMPLETED || application.status === ApplicationStatus.CANCELLED) {
+      return { canCancel: false, reason: '此申請已無法取消' };
+    }
+
+    // 檢查預約時間是否在24小時內
+    if (application.appointmentDate && application.appointmentTime) {
+      const appointmentDateTime = parseAppointmentDateTime(application.appointmentDate, application.appointmentTime);
+      const now = new Date();
+      const timeDiff = appointmentDateTime.getTime() - now.getTime();
+      const hoursUntilAppointment = timeDiff / (1000 * 60 * 60);
+      
+      if (hoursUntilAppointment < 24 && hoursUntilAppointment > 0) {
+        return { canCancel: false, reason: '預約時間少於24小時，請直接致電收容所取消' };
+      }
+    }
+
+    return { canCancel: true };
+  };
+
+  // 取消申請
+  const cancelApplication = async (id: string, reason: 'user' | 'phone'): Promise<{ success: boolean; message: string }> => {
+    const canCancel = canCancelApplication(id);
+    
+    if (!canCancel.canCancel) {
+      return { success: false, message: canCancel.reason || '無法取消申請' };
+    }
+
+    // 更新取消次數
+    const newCancellationCount = userProfile.cancellationCount + 1;
+    const newIsBlacklisted = newCancellationCount >= 3;
+
+    setUserProfile(prev => ({
+      ...prev,
+      cancellationCount: newCancellationCount,
+      isBlacklisted: newIsBlacklisted,
+      lastCancellationDate: new Date().toLocaleDateString('zh-TW')
+    }));
+
+    // 更新申請狀態
+    setApplications(prev => 
+      prev.map(app => 
+        app.id === id 
+          ? { 
+              ...app, 
+              status: ApplicationStatus.CANCELLED,
+              notes: `取消原因：${reason === 'user' ? 'APP取消' : '電話取消'}` 
+            }
+          : app
+      )
+    );
+
+    const message = newIsBlacklisted 
+      ? '申請已取消。您已達到取消上限（3次），已被加入黑名單，今後只能進行線上投餵。'
+      : `申請已取消。您還可以取消 ${3 - newCancellationCount} 次。`;
+
+    return { success: true, message };
+  };
+
+  // 解析預約日期時間
+  const parseAppointmentDateTime = (date: string, time: string): Date => {
+    // 解析日期 (格式: 2024/01/22)
+    const [year, month, day] = date.split('/').map(Number);
+    
+    // 解析時間 (格式: 上午 9:00-12:00 或 下午 14:00-17:00)
+    let hour = 9; // 預設值
+    
+    const timeMatch = time.match(/(\d+):(\d+)/);
+    if (timeMatch) {
+      hour = parseInt(timeMatch[1]);
+      const minute = parseInt(timeMatch[2]);
+      
+      if (time.includes('下午') && hour < 12) {
+        hour += 12;
+      }
+    }
+    
+    return new Date(year, month - 1, day, hour, 0, 0);
+  };
+
   const value: AdoptionContextType = {
     applications,
+    userProfile,
     addApplication,
     updateApplicationStatus,
+    cancelApplication,
+    canCancelApplication,
     getApplicationById,
     getApplicationsByStatus,
   };
