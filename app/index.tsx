@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { StyleSheet, View, Platform, Pressable } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -24,11 +24,11 @@ export default function SplashScreen() {
     }, [player])
   );
 
-  // 影片播畢 1 秒後自動導向 /(tabs)
+  // 影片播畢 1 秒後自動導向 /login
   useEffect(() => {
     const sub = player.addListener('playToEnd', () => {
       setTimeout(() => {
-        router.replace('/(tabs)');
+        router.replace('/login');
       }, 1000);
     });
     return () => sub.remove();

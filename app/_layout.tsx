@@ -29,6 +29,8 @@ export default function RootLayout() {
   return (
     <AdoptionProvider>
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="loading" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="animal/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="TreatSelectionScreen" options={{ headerShown: false }} />
