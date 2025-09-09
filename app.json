@@ -10,7 +10,17 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sandy-wang.bolt-expo-nativewind"
+      "bundleIdentifier": "com.sandy-wang.bolt-expo-nativewind",
+      "config": {
+        "googleMapsApiKey": "AIzaSyC4TJEhvlQpo5sMW0L8sO9UXE5v9h2l8OU"
+      }
+    },
+    "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyC4TJEhvlQpo5sMW0L8sO9UXE5v9h2l8OU"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -21,7 +31,8 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      "expo-video"
+      "expo-video",
+      "expo-location"
     ],
     "experiments": {
       "typedRoutes": true
