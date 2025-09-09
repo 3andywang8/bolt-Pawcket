@@ -1,215 +1,153 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Image, StyleSheet, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Image, StyleSheet, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
+const { height: screenHeight } = Dimensions.get('window');
+
 export default function LoadingScreen() {
   const router = useRouter();
+  const [showTransition, setShowTransition] = useState(false);
   
-  // 動畫值
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim1 = useRef(new Animated.Value(1)).current;
-  const scaleAnim2 = useRef(new Animated.Value(1)).current;
-  const scaleAnim3 = useRef(new Animated.Value(1)).current;
-  const opacityAnim1 = useRef(new Animated.Value(1)).current;
-  const opacityAnim2 = useRef(new Animated.Value(0.7)).current;
-  const opacityAnim3 = useRef(new Animated.Value(0.4)).current;
+  // 計算腳印數量：螢幕高度除以腳印間距，再加一些額外的
+  const pawStepHeight = 80; // 每個腳印之間的垂直距離
+  const totalPaws = Math.floor(screenHeight / pawStepHeight) + 2; // 約8-10個腳印
+  
+  // 動態創建腳印動畫值
+  const pawAnimations = useRef(
+    Array.from({ length: totalPaws }, () => ({
+      opacity: new Animated.Value(0),
+      scale: new Animated.Value(0.3),
+    }))
+  ).current;
+
+  // 頁面過渡動畫值
+  const slideUpAnim = useRef(new Animated.Value(screenHeight)).current;
+  const fadeOutAnim = useRef(new Animated.Value(1)).current;
+
+  // 腳印圖片陣列
+  const pawImages = [
+    require('../assets/腳掌橘.png'),
+    require('../assets/腳掌黃.png'),
+    require('../assets/腳掌白.png'),
+  ];
 
   useEffect(() => {
-    // 旋轉動畫
-    const rotateAnimation = Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: true,
-      })
-    );
-
-    // 脈衝動畫 - 腳掌1
-    const pulseAnimation1 = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scaleAnim1, {
-          toValue: 1.2,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim1, {
+    // 創建所有腳印的動畫陣列 (加快腳印出現速度)
+    const pawAnimationSequence = pawAnimations.map((pawAnim, index) => 
+      Animated.parallel([
+        Animated.timing(pawAnim.opacity, {
           toValue: 1,
-          duration: 400,
+          duration: 300, // 從400ms減少到300ms
           useNativeDriver: true,
         }),
-        Animated.delay(400),
-      ])
-    );
-
-    // 脈衝動畫 - 腳掌2 (延遲)
-    const pulseAnimation2 = Animated.loop(
-      Animated.sequence([
-        Animated.delay(200),
-        Animated.timing(scaleAnim2, {
-          toValue: 1.2,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim2, {
+        Animated.timing(pawAnim.scale, {
           toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.delay(200),
-      ])
-    );
-
-    // 脈衝動畫 - 腳掌3 (延遲更多)
-    const pulseAnimation3 = Animated.loop(
-      Animated.sequence([
-        Animated.delay(400),
-        Animated.timing(scaleAnim3, {
-          toValue: 1.2,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim3, {
-          toValue: 1,
-          duration: 400,
+          duration: 300, // 從400ms減少到300ms
           useNativeDriver: true,
         }),
       ])
     );
 
-    // 透明度動畫
-    const opacityAnimation1 = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacityAnim1, {
-          toValue: 0.4,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim1, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ])
-    );
+    // 腳印依序出現的動畫 (從下往上，間隔縮短到280ms)
+    const walkingAnimation = Animated.stagger(280, pawAnimationSequence);
 
-    const opacityAnimation2 = Animated.loop(
-      Animated.sequence([
-        Animated.delay(300),
-        Animated.timing(opacityAnim2, {
-          toValue: 0.3,
-          duration: 800,
+    // 啟動走路動畫
+    walkingAnimation.start(() => {
+      // 走路動畫完成後，立即開始頁面過渡 (移除setTimeout)
+      setShowTransition(true);
+      
+      // 同時執行淡出和滑入動畫 (加快速度)
+      Animated.parallel([
+        Animated.timing(fadeOutAnim, {
+          toValue: 0,
+          duration: 400, // 從600ms減少到400ms
           useNativeDriver: true,
         }),
-        Animated.timing(opacityAnim2, {
-          toValue: 0.7,
-          duration: 800,
+        Animated.timing(slideUpAnim, {
+          toValue: 0,
+          duration: 500, // 從800ms減少到500ms
           useNativeDriver: true,
         }),
-      ])
-    );
-
-    const opacityAnimation3 = Animated.loop(
-      Animated.sequence([
-        Animated.delay(600),
-        Animated.timing(opacityAnim3, {
-          toValue: 0.2,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim3, {
-          toValue: 0.4,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    // 啟動所有動畫
-    rotateAnimation.start();
-    pulseAnimation1.start();
-    pulseAnimation2.start();
-    pulseAnimation3.start();
-    opacityAnimation1.start();
-    opacityAnimation2.start();
-    opacityAnimation3.start();
-
-    // 1秒後跳轉到探索頁面
-    const timer = setTimeout(() => {
-      router.replace('/(tabs)');
-    }, 1000);
+      ]).start(() => {
+        // 動畫完成後跳轉
+        router.replace('/(tabs)');
+      });
+    });
 
     return () => {
-      rotateAnimation.stop();
-      pulseAnimation1.stop();
-      pulseAnimation2.stop();
-      pulseAnimation3.stop();
-      opacityAnimation1.stop();
-      opacityAnimation2.stop();
-      opacityAnimation3.stop();
-      clearTimeout(timer);
+      walkingAnimation.stop();
     };
-  }, [router, rotateAnim, scaleAnim1, scaleAnim2, scaleAnim3, opacityAnim1, opacityAnim2, opacityAnim3]);
-
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+  }, [router, pawAnimations, slideUpAnim, fadeOutAnim]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.loadingContainer}>
-        <Animated.View style={[styles.pawContainer, { transform: [{ rotate: spin }] }]}>
-          {/* 腳掌橘 - 中心 */}
-          <Animated.View style={[
-            styles.pawWrapper,
-            styles.centerPaw,
-            {
-              transform: [{ scale: scaleAnim1 }],
-              opacity: opacityAnim1,
-            }
-          ]}>
-            <Image 
-              source={require('../assets/腳掌橘.png')} 
-              style={styles.pawImage}
-              resizeMode="contain"
-            />
-          </Animated.View>
+    <View style={styles.container}>
+      {/* Loading內容 */}
+      <Animated.View style={[
+        styles.loadingContent,
+        { opacity: fadeOutAnim }
+      ]}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.loadingContainer}>
+            <View style={styles.pawPathContainer}>
+              {/* 動態渲染所有腳印 */}
+              {pawAnimations.map((pawAnim, index) => {
+                // 計算每個腳印的位置
+                const bottomPosition = 50 + (index * pawStepHeight);
+                const isEven = index % 2 === 0;
+                const leftPosition = isEven ? 60 : 120; // 交替左右位置
+                const rotation = isEven ? `${10 + (index % 3) * 5}deg` : `${-8 - (index % 3) * 4}deg`;
+                const pawImageIndex = index % 3; // 循環使用三種腳印圖片
 
-          {/* 腳掌黃 - 左上 */}
-          <Animated.View style={[
-            styles.pawWrapper,
-            styles.leftPaw,
-            {
-              transform: [{ scale: scaleAnim2 }],
-              opacity: opacityAnim2,
-            }
-          ]}>
-            <Image 
-              source={require('../assets/腳掌黃.png')} 
-              style={styles.pawImage}
-              resizeMode="contain"
-            />
-          </Animated.View>
+                return (
+                  <Animated.View 
+                    key={index}
+                    style={[
+                      styles.pawStep,
+                      {
+                        bottom: bottomPosition,
+                        left: leftPosition,
+                        opacity: pawAnim.opacity,
+                        transform: [
+                          { scale: pawAnim.scale }, 
+                          { rotate: rotation }
+                        ],
+                      }
+                    ]}
+                  >
+                    <Image 
+                      source={pawImages[pawImageIndex]}
+                      style={styles.pawImage}
+                      resizeMode="contain"
+                    />
+                  </Animated.View>
+                );
+              })}
+            </View>
+          </View>
+        </SafeAreaView>
+      </Animated.View>
 
-          {/* 腳掌白 - 右下 */}
-          <Animated.View style={[
-            styles.pawWrapper,
-            styles.rightPaw,
-            {
-              transform: [{ scale: scaleAnim3 }],
-              opacity: opacityAnim3,
-            }
-          ]}>
-            <Image 
-              source={require('../assets/腳掌白.png')} 
-              style={styles.pawImage}
-              resizeMode="contain"
-            />
-          </Animated.View>
+      {/* 過渡元素 - 模擬下一頁面從下方滑入 */}
+      {showTransition && (
+        <Animated.View style={[
+          styles.transitionOverlay,
+          {
+            transform: [{ translateY: slideUpAnim }],
+          }
+        ]}>
+          <View style={styles.transitionContent}>
+            <View style={styles.previewContent}>
+              {/* 模擬探索頁面的預覽 */}
+              <View style={styles.mockHeader}>
+                <View style={styles.mockTitle} />
+              </View>
+              <View style={styles.mockCard} />
+            </View>
+          </View>
         </Animated.View>
-      </View>
-    </SafeAreaView>
+      )}
+    </View>
   );
 }
 
@@ -218,37 +156,79 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF9F0',
   },
+  loadingContent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  pawContainer: {
+  pawPathContainer: {
     position: 'relative',
-    width: 120,
-    height: 120,
+    width: 200,
+    height: screenHeight - 100, // 使用整個螢幕高度減去邊距
     justifyContent: 'center',
     alignItems: 'center',
   },
-  pawWrapper: {
+  pawStep: {
     position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centerPaw: {
-    top: 35,
-    left: 35,
-  },
-  leftPaw: {
-    top: 10,
-    left: 10,
-  },
-  rightPaw: {
-    top: 60,
-    left: 60,
   },
   pawImage: {
     width: 50,
     height: 50,
+  },
+  // 過渡動畫樣式
+  transitionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#FEFDFB',
+    zIndex: 2,
+  },
+  transitionContent: {
+    flex: 1,
+    paddingTop: 100,
+  },
+  previewContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  mockHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    marginBottom: 30,
+  },
+  mockTitle: {
+    width: 150,
+    height: 24,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 6,
+  },
+  mockCard: {
+    width: '100%',
+    height: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
 });
