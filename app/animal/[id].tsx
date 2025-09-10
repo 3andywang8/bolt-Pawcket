@@ -31,7 +31,9 @@ export default function AnimalProfileScreen() {
   const [currentImageIndex] = useState(0);
 
   // Find animal by ID
+  console.log('Animal page opened with ID:', id);
   const animal = ANIMALS_DATA.find((a) => a.id === id);
+  console.log('Found animal:', animal?.name);
   
   // Check if this animal has an active application (not cancelled)
   const existingApplication = applications.find(app => 
@@ -66,9 +68,12 @@ export default function AnimalProfileScreen() {
     console.log('[DEBUG] handleDonation function called.'); // 監控點 1：確認函式被呼叫
     triggerHapticFeedback();
     
-    if (animal?.type) {
+    if (animal?.type && animal?.name) {
       const targetPath = '/TreatSelectionScreen' as any;
-      const params = { animalType: animal.type };
+      const params = { 
+        animalType: animal.type,
+        animalName: animal.name
+      };
       
       console.log(`[DEBUG] Attempting to navigate to: ${targetPath} with params:`, params); // 監控點 2：確認跳轉參數
       
@@ -240,7 +245,7 @@ export default function AnimalProfileScreen() {
           <View style={styles.headerControls}>
             <TouchableOpacity
               style={styles.controlButton}
-              onPress={() => router.back()}>
+              onPress={() => router.push('/(tabs)' as any)}>
               <ArrowLeft size={24} color="#FFFFFF" strokeWidth={2} />
             </TouchableOpacity>
             

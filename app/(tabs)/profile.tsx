@@ -11,6 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { User, Heart, Gift, Chrome as Home, Award, Settings, ChevronRight, Bell, CircleHelp as HelpCircle } from 'lucide-react-native';
 import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import { useDonations } from '@/contexts/DonationContext';
 
 const ProfileItem = ({
   icon: Icon,
@@ -62,6 +64,8 @@ const StatsCard = ({
 export default function ProfileScreen() {
   const router = useRouter();
   const { applications } = useAdoption();
+  const { favorites } = useFavorites();
+  const { getTotalDonations, getTotalAmount } = useDonations();
 
   // 計算統計數據
   const totalApplications = applications.length;
@@ -69,12 +73,21 @@ export default function ProfileScreen() {
     app.status === ApplicationStatus.PENDING || 
     app.status === ApplicationStatus.CONFIRMED
   ).length;
+  const favoritesCount = favorites.length;
+  const totalDonations = getTotalDonations();
+  const totalDonationAmount = getTotalAmount();
 
   const handleItemPress = (item: string) => {
     console.log(`Pressed: ${item}`);
     switch (item) {
       case 'adoptions':
         router.push('/AdoptionProgressScreen');
+        break;
+      case 'donations':
+        router.push('/MyDonationsScreen');
+        break;
+      case 'favorites':
+        router.push('/FavoritesScreen');
         break;
       default:
         console.log(`Navigation for ${item} not implemented yet`);
@@ -113,8 +126,8 @@ export default function ProfileScreen() {
 
         {/* Stats */}
         <View style={styles.statsContainer}>
-          <StatsCard number="15" label="已收藏" color="#F97316" />
-          <StatsCard number="3" label="已捐款" color="#FBBF24" />
+          <StatsCard number={favoritesCount.toString()} label="已收藏" color="#F97316" />
+          <StatsCard number={totalDonations.toString()} label="已捐款" color="#FBBF24" />
           <StatsCard number={pendingApplications.toString()} label="諮詢中" color="#10B981" />
         </View>
 
@@ -126,7 +139,7 @@ export default function ProfileScreen() {
             icon={Heart}
             title="我的收藏"
             subtitle="查看收藏的毛孩"
-            value="15"
+            value={favoritesCount.toString()}
             onPress={() => handleItemPress('favorites')}
           />
           
@@ -134,7 +147,7 @@ export default function ProfileScreen() {
             icon={Gift}
             title="我的捐款"
             subtitle="捐款紀錄與證明"
-            value="NT$450"
+            value={`NT$${totalDonationAmount}`}
             onPress={() => handleItemPress('donations')}
           />
           

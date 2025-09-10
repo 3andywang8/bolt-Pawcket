@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Platform,
   Modal,
   Pressable,
-  Dimensions,
   Alert,
   ScrollView,
 } from 'react-native';
@@ -17,7 +16,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import {
   Heart,
-  Chrome as Home,
   Share2,
   Bookmark,
   Download,
@@ -25,16 +23,19 @@ import {
   MessageCircle,
   AtSign,
   Send,
+  History,
 } from 'lucide-react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as Haptics from 'expo-haptics';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import { smartShare } from '../utils/share';
+import { useDonations } from '@/contexts/DonationContext';
 
 export default function PaymentSuccessScreen() {
   const router = useRouter();
-  const { treatId, treatName, price, animalType, paymentMethod } =
+  const { addDonation } = useDonations();
+  const { treatId, treatName, price, animalType, animalName, paymentMethod } =
     useLocalSearchParams();
 
   // 動態選擇影片的邏輯
@@ -81,6 +82,15 @@ export default function PaymentSuccessScreen() {
     }
   };
 
+  // 計算顯示用的動物名稱（使用 useMemo 避免重新計算）
+  const displayAnimalName = useMemo(() => {
+    return animalName ? animalName as string : (animalType === 'cat' ? '貓咪' : '狗狗');
+  }, [animalName, animalType]);
+  
+  // 固定支付時間（在組件加載時就確定）
+  const [paymentTime] = useState(() => new Date().toLocaleString('zh-TW'));
+
+  // 動畫和震動反饋 - 只在組件載入時執行一次
   useEffect(() => {
     triggerHapticFeedback();
 
@@ -98,10 +108,26 @@ export default function PaymentSuccessScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 只在組件載入時執行一次
 
-  const handleBackToHome = () => {
-    router.push('/(tabs)');
+  // 記錄捐款到歷史記錄 - 只在組件載入時執行一次
+  useEffect(() => {
+    if (treatId && treatName && price && animalType && paymentMethod) {
+      addDonation({
+        treatId: treatId as string,
+        treatName: treatName as string,
+        price: typeof price === 'string' ? parseInt(price) : parseInt(Array.isArray(price) ? price[0] : price),
+        animalType: animalType as 'cat' | 'dog',
+        paymentMethod: paymentMethod as string,
+        animalName: displayAnimalName,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 只在組件載入時執行一次
+
+  const handleViewDonations = () => {
+    router.push('/MyDonationsScreen');
   };
 
   const handleShare = () => {
@@ -215,7 +241,7 @@ export default function PaymentSuccessScreen() {
   const handleBookmark = () => {
     // 收藏功能
     console.log('收藏影片');
-    router.navigate('favorites' as any);
+    router.push('/FavoritesScreen');
   };
 
   const handleVideoShare = () => {
@@ -300,7 +326,7 @@ export default function PaymentSuccessScreen() {
       );
 
       // 觸發成功震動回饋
-      if (Platform.OS !== 'web') {
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
@@ -314,7 +340,6 @@ export default function PaymentSuccessScreen() {
     }
   };
 
-  const animalName = animalType === 'cat' ? '貓咪' : '狗狗';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -338,7 +363,7 @@ export default function PaymentSuccessScreen() {
         <Animated.View style={{ opacity: fadeAnim }}>
           <Text style={styles.successTitle}>投餵成功！</Text>
           <Text style={styles.successSubtitle}>
-            感謝你的愛心，{animalName}正在享用美味的{treatName}
+            感謝你的愛心，{displayAnimalName}正在享用美味的{treatName}
           </Text>
         </Animated.View>
       </View>
@@ -368,7 +393,7 @@ export default function PaymentSuccessScreen() {
             </View>
           </View>
           <Text style={styles.videoDescription}>
-            {animalName}正在開心地享用你贈送的{treatName}！
+            {displayAnimalName}正在開心地享用你贈送的{treatName}！
           </Text>
 
           {/* 影片操作按鈕 */}
@@ -414,7 +439,6 @@ export default function PaymentSuccessScreen() {
             <Text style={styles.detailLabel}>支付方式</Text>
             <Text style={styles.detailValue}>
               {paymentMethod === 'apple-pay' && 'Apple Pay'}
-              {paymentMethod === 'google-pay' && 'Google Pay'}
               {paymentMethod === 'line-pay' && 'LINE Pay'}
               {paymentMethod === 'credit-card' && '信用卡'}
             </Text>
@@ -422,7 +446,7 @@ export default function PaymentSuccessScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>時間</Text>
             <Text style={styles.detailValue}>
-              {new Date().toLocaleString('zh-TW')}
+              {paymentTime}
             </Text>
           </View>
         </View>
@@ -442,9 +466,9 @@ export default function PaymentSuccessScreen() {
             <Text style={styles.shareButtonText}>分享愛心</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.homeButton} onPress={handleBackToHome}>
-            <Home size={20} color="#FFFFFF" strokeWidth={2} />
-            <Text style={styles.homeButtonText}>回到首頁</Text>
+          <TouchableOpacity style={styles.donationButton} onPress={handleViewDonations}>
+            <History size={20} color="#FFFFFF" strokeWidth={2} />
+            <Text style={styles.donationButtonText}>查看捐款紀錄</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -559,7 +583,6 @@ export default function PaymentSuccessScreen() {
   );
 }
 
-const { height: screenHeight } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
@@ -757,7 +780,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#F97316',
   },
-  homeButton: {
+  donationButton: {
     flex: 2,
     backgroundColor: '#F97316',
     flexDirection: 'row',
@@ -767,7 +790,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
   },
-  homeButtonText: {
+  donationButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',

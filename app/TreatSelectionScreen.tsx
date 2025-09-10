@@ -14,60 +14,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, ShoppingCart } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-
-// 零食數據
-const TREATS = {
-  dog: [
-    {
-      id: 'd1',
-      name: '凍乾雞肉',
-      price: 50,
-      image: require('../assets/dog-treat-freeze-dried.png'),
-      description: '純天然凍乾雞肉，營養豐富',
-    },
-    {
-      id: 'd2',
-      name: '潔牙骨',
-      price: 30,
-      image: require('../assets/dog-treat-dental-bone.png'),
-      description: '幫助清潔牙齒，維護口腔健康',
-    },
-    {
-      id: 'd3',
-      name: '雞肉條',
-      price: 40,
-      image: require('../assets/dog-treat-chicken-jerky.png'),
-      description: '香嫩雞肉條，狗狗最愛',
-    },
-  ],
-  cat: [
-    {
-      id: 'c1',
-      name: '肉泥',
-      price: 35,
-      image: require('../assets/cat-treat-puree.png'),
-      description: '滑嫩肉泥，貓咪無法抗拒',
-    },
-    {
-      id: 'c2',
-      name: '凍乾魚肉',
-      price: 45,
-      image: require('../assets/cat-treat-freeze-dried.png'),
-      description: '新鮮魚肉凍乾，保留原味',
-    },
-    {
-      id: 'c3',
-      name: '脆餅乾',
-      price: 25,
-      image: require('../assets/cat-treat-biscuits.png'),
-      description: '酥脆可口，營養均衡',
-    },
-  ],
-};
+import { getTreatsByType } from '@/data/treats';
 
 export default function TreatSelectionScreen() {
   const router = useRouter();
-  const { animalType } = useLocalSearchParams();
+  const { animalType, animalName } = useLocalSearchParams();
   const [selectedTreat, setSelectedTreat] = useState<string | null>(null);
 
   const triggerHapticFeedback = () => {
@@ -77,8 +28,8 @@ export default function TreatSelectionScreen() {
   };
 
   // 根據動物類型獲取零食列表
-  const treats = animalType === 'cat' ? TREATS.cat : TREATS.dog;
-  const animalName = animalType === 'cat' ? '貓咪' : '狗狗';
+  const treats = getTreatsByType(animalType as 'cat' | 'dog');
+  const displayName = animalName ? animalName as string : (animalType === 'cat' ? '貓咪' : '狗狗');
 
   const handleTreatSelect = (treatId: string) => {
     triggerHapticFeedback();
@@ -104,6 +55,7 @@ export default function TreatSelectionScreen() {
         treatName: treat.name,
         price: treat.price.toString(),
         animalType: animalType as string,
+        animalName: animalName as string,
       },
     });
   };
@@ -121,16 +73,16 @@ export default function TreatSelectionScreen() {
           onPress={() => router.back()}>
           <ArrowLeft size={24} color="#1C1917" strokeWidth={2} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>選擇{animalName}零食</Text>
+        <Text style={styles.headerTitle}>選擇{displayName}零食</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* 說明文字 */}
         <View style={styles.descriptionContainer}>
-          <Text style={styles.descriptionTitle}>為{animalName}選擇美味零食 🍖</Text>
+          <Text style={styles.descriptionTitle}>為{displayName}選擇美味零食 🍖</Text>
           <Text style={styles.descriptionText}>
-            你的愛心將直接轉化為{animalName}的美味零食，讓牠們感受到溫暖與關愛
+            你的愛心將直接轉化為{displayName}的美味零食，讓牠感受到溫暖與關愛
           </Text>
         </View>
 

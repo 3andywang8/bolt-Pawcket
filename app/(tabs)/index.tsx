@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,22 +12,26 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Filter, Heart, Star, MapPin } from 'lucide-react-native';
+import { Filter, Heart, MapPin } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import ANIMALS_DATA from './datas';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.9;
 const CARD_HEIGHT = screenHeight * 0.7;
 
-import ANIMALS_DATA from './datas';
-
 // Mock animal data
 export default function ExploreScreen() {
   const router = useRouter();
   const { applications } = useAdoption();
+  const { addToFavorites } = useFavorites();
   const [currentIndex, setCurrentIndex] = useState(0);
+  
+  // 使用 useRef 來存儲當前索引的最新值，避免 closure 問題
+  const currentIndexRef = useRef(0);
   
   // 過濾已完成領養的寵物，然後隨機排序
   const animals = React.useMemo(() => {
@@ -49,6 +53,28 @@ export default function ExploreScreen() {
     }
     return copy;
   }, [applications]);
+  
+  // 同步更新索引的函數，確保 state 和 ref 保持一致
+  const updateCurrentIndex = useCallback(() => {
+    const nextIndex = (currentIndexRef.current + 1) % animals.length;
+    currentIndexRef.current = nextIndex;
+    setCurrentIndex(nextIndex);
+    console.log('索引更新：', currentIndexRef.current, '→ 下一張動物：', animals[nextIndex]?.name);
+    return nextIndex;
+  }, [animals.length]);
+  
+  // 獲取當前動物的函數，確保使用最新的索引
+  const getCurrentAnimal = useCallback(() => {
+    const currentAnimal = animals[currentIndexRef.current];
+    console.log('取得當前動物：索引', currentIndexRef.current, '動物名稱', currentAnimal?.name);
+    return currentAnimal;
+  }, [animals]);
+  
+  // 確保 ref 與 state 保持同步
+  React.useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+  
   const position = useRef(new Animated.ValueXY()).current;
   const rotate = useRef(new Animated.Value(0)).current;
   const nextCardOpacity = useRef(new Animated.Value(0.8)).current;
@@ -67,7 +93,7 @@ export default function ExploreScreen() {
 
   const forceSwipe = (direction: 'right' | 'left') => {
     const x = direction === 'right' ? screenWidth + 100 : -screenWidth - 100;
-
+    
     if (direction === 'right') {
       triggerHapticFeedback();
     }
@@ -86,17 +112,46 @@ export default function ExploreScreen() {
     ]).start(() => onSwipeComplete(direction));
   };
 
-  const onSwipeComplete = (direction: 'right' | 'left') => {
-    const item = animals[currentIndex];
+  const onSwipeComplete = useCallback((direction: 'right' | 'left') => {
+    // 使用 getCurrentAnimal 確保獲取最新的動物資料，避免 closure 問題
+    const currentAnimal = getCurrentAnimal();
+    
+    if (!currentAnimal) {
+      console.error('無法取得當前動物資料，索引：', currentIndexRef.current);
+      return;
+    }
+
+    console.log(`==== 滑動完成 ====`);
+    console.log(`方向: ${direction}, 動物: ${currentAnimal.name}, ID: ${currentAnimal.id}`);
+    console.log(`當前索引: ${currentIndexRef.current}, State索引: ${currentIndex}`);
 
     if (direction === 'right') {
-      // 右滑：喜歡並切換下一張
-      console.log('Liked:', item.name);
+      // 右滑：喜歡，添加到收藏並打開動物頁面
+      console.log('執行右滑邏輯：添加收藏並導航到動物頁面');
+      
+      addToFavorites({
+        animalId: currentAnimal.id,
+        animalName: currentAnimal.name,
+        animalType: currentAnimal.type.toLowerCase() as 'cat' | 'dog',
+        animalImage: currentAnimal.image,
+        animalBreed: currentAnimal.breed,
+        animalAge: currentAnimal.age,
+        shelter: currentAnimal.shelter,
+        location: currentAnimal.location,
+        personality: currentAnimal.personality,
+      });
+      
+      // 在導航前先更新索引，確保用戶返回時看到正確的下一張卡牌
+      updateCurrentIndex();
+      
+      // 導航到動物個人頁面 - 使用當前動物的ID，不是下一張卡牌的ID
+      console.log('導航到動物頁面，ID：', currentAnimal.id);
+      router.push(`/animal/${currentAnimal.id}` as any);
     } else {
-      // 左滑：祝福但不切換
-      console.log('Blessed:', item.name);
+      // 左滑：祝福，直接更新到下一張卡牌
+      console.log('執行左滑邏輯：祝福並繼續');
+      updateCurrentIndex();
     }
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % animals.length);
 
     resetPosition();
 
@@ -113,7 +168,10 @@ export default function ExploreScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  };
+    
+    console.log(`==== 滑動完成後 ====`);
+    console.log(`新的索引: ${currentIndexRef.current}`);
+  }, [getCurrentAnimal, updateCurrentIndex, currentIndex, addToFavorites, router, nextCardOpacity, nextCardScale]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -231,7 +289,7 @@ export default function ExploreScreen() {
               ]}
             >
               <View style={styles.choiceContent}>
-                <Star size={40} color="#FFFFFF" fill="#FFFFFF" />
+                <Text style={styles.prayEmoji}>🙏</Text>
                 <Text style={[styles.choiceText, { color: '#FFFFFF' }]}>
                   祝福
                 </Text>
@@ -329,21 +387,81 @@ export default function ExploreScreen() {
       </View>
 
       {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.blessButton]}
-          onPress={() => forceSwipe('left')}
+      <Animated.View style={styles.actionButtons}>
+        <Animated.View
+          style={[
+            styles.actionButtonContainer,
+            {
+              opacity: position.x.interpolate({
+                inputRange: [-screenWidth * 0.3, -50, 0, 50, screenWidth * 0.3],
+                outputRange: [1, 1, 1, 0.2, 0],
+                extrapolate: 'clamp',
+              }),
+              transform: [
+                {
+                  translateX: position.x.interpolate({
+                    inputRange: [-screenWidth, 0, screenWidth],
+                    outputRange: [-screenWidth * 0.3, 0, 0],
+                    extrapolate: 'clamp',
+                  })
+                },
+                {
+                  scale: position.x.interpolate({
+                    inputRange: [-screenWidth * 0.3, -50, 0, 50, screenWidth * 0.3],
+                    outputRange: [1.2, 1, 1, 0.7, 0.3],
+                    extrapolate: 'clamp',
+                  })
+                }
+              ]
+            }
+          ]}
         >
-          <Star size={28} color="#FBBF24" fill="#FBBF24" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.blessButton]}
+            onPress={() => forceSwipe('left')}
+          >
+            <Text style={styles.blessEmoji}>🙏</Text>
+          </TouchableOpacity>
+          <Text style={styles.buttonLabel}>祝福</Text>
+        </Animated.View>
 
-        <TouchableOpacity
-          style={[styles.actionButton, styles.likeButton]}
-          onPress={() => forceSwipe('right')}
+        <Animated.View
+          style={[
+            styles.actionButtonContainer,
+            {
+              opacity: position.x.interpolate({
+                inputRange: [-screenWidth * 0.3, -50, 0, 50, screenWidth * 0.3],
+                outputRange: [0, 0.2, 1, 1, 1],
+                extrapolate: 'clamp',
+              }),
+              transform: [
+                {
+                  translateX: position.x.interpolate({
+                    inputRange: [-screenWidth, 0, screenWidth],
+                    outputRange: [0, 0, screenWidth * 0.3],
+                    extrapolate: 'clamp',
+                  })
+                },
+                {
+                  scale: position.x.interpolate({
+                    inputRange: [-screenWidth * 0.3, -50, 0, 50, screenWidth * 0.3],
+                    outputRange: [0.3, 0.7, 1, 1, 1.2],
+                    extrapolate: 'clamp',
+                  })
+                }
+              ]
+            }
+          ]}
         >
-          <Heart size={28} color="#FFFFFF" fill="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.likeButton]}
+            onPress={() => forceSwipe('right')}
+          >
+            <Heart size={28} color="#FFFFFF" fill="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.buttonLabel}>喜歡</Text>
+        </Animated.View>
+      </Animated.View>
 
       {/* Bottom instruction */}
       <Text style={styles.instructionText}>
@@ -436,6 +554,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 8,
   },
+  prayEmoji: {
+    fontSize: 40,
+    textAlign: 'center',
+  },
   cardInfo: {
     flex: 1,
     padding: 20,
@@ -500,10 +622,13 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
+    justifyContent: 'space-between',
+    paddingHorizontal: 60,
     paddingVertical: 20,
-    gap: 60,
+    position: 'relative',
+  },
+  actionButtonContainer: {
+    alignItems: 'center',
   },
   actionButton: {
     width: 60,
@@ -525,8 +650,18 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FBBF24',
   },
+  blessEmoji: {
+    fontSize: 28,
+    textAlign: 'center',
+  },
   likeButton: {
     backgroundColor: '#F97316',
+  },
+  buttonLabel: {
+    fontSize: 14,
+    color: '#78716C',
+    marginTop: 8,
+    fontWeight: '500',
   },
   instructionText: {
     textAlign: 'center',

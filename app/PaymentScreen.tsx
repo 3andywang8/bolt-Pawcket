@@ -12,31 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, CreditCard, Smartphone, Shield } from 'lucide-react-native';
+import { ArrowLeft, CreditCard, Shield } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 const PAYMENT_METHODS = [
-  {
-    id: 'apple-pay',
-    name: 'Apple Pay',
-    icon: '🍎',
-    description: '快速安全支付',
-    available: Platform.OS === 'ios',
-  },
-  {
-    id: 'google-pay',
-    name: 'Google Pay',
-    icon: '🟢',
-    description: '一鍵完成支付',
-    available: Platform.OS === 'android',
-  },
-  {
-    id: 'line-pay',
-    name: 'LINE Pay',
-    icon: '💚',
-    description: 'LINE 快速支付',
-    available: true,
-  },
   {
     id: 'credit-card',
     name: '信用卡',
@@ -44,11 +23,27 @@ const PAYMENT_METHODS = [
     description: 'Visa / MasterCard',
     available: true,
   },
+  {
+    id: 'apple-pay',
+    name: 'Apple Pay',
+    icon: require('../assets/applepay.png'),
+    description: '快速安全支付',
+    available: true,
+    isImage: true,
+  },
+  {
+    id: 'line-pay',
+    name: 'LINE Pay',
+    icon: require('../assets/linepay.png'),
+    description: 'LINE 快速支付',
+    available: true,
+    isImage: true,
+  },
 ];
 
 export default function PaymentScreen() {
   const router = useRouter();
-  const { treatId, treatName, price, animalType } = useLocalSearchParams();
+  const { treatId, treatName, price, animalType, animalName } = useLocalSearchParams();
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -84,6 +79,7 @@ export default function PaymentScreen() {
           treatName: treatName as string,
           price: price as string,
           animalType: animalType as string,
+          animalName: animalName as string,
           paymentMethod: selectedPayment,
         },
       });
@@ -136,7 +132,11 @@ export default function PaymentScreen() {
               onPress={() => handlePaymentSelect(method.id)}>
               
               <View style={styles.paymentLeft}>
-                <Text style={styles.paymentIcon}>{method.icon}</Text>
+                {method.isImage ? (
+                  <Image source={method.icon} style={styles.paymentIconImage} />
+                ) : (
+                  <Text style={styles.paymentIcon}>{method.icon}</Text>
+                )}
                 <View style={styles.paymentInfo}>
                   <Text style={styles.paymentName}>{method.name}</Text>
                   <Text style={styles.paymentDescription}>{method.description}</Text>
@@ -311,6 +311,12 @@ const styles = StyleSheet.create({
   paymentIcon: {
     fontSize: 24,
     marginRight: 12,
+  },
+  paymentIconImage: {
+    width: 32,
+    height: 32,
+    marginRight: 12,
+    resizeMode: 'contain',
   },
   paymentInfo: {
     flex: 1,
