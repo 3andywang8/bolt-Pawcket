@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 
 import ANIMALS_DATA from '../(tabs)/datas';
 import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -27,6 +28,7 @@ export default function AnimalProfileScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { applications, canCancelApplication, cancelApplication } = useAdoption();
+  const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentImageIndex] = useState(0);
 
@@ -39,6 +41,14 @@ export default function AnimalProfileScreen() {
   const existingApplication = applications.find(app => 
     app.animalId === id && app.status !== ApplicationStatus.CANCELLED
   );
+
+  // Check if animal is already in favorites
+  useEffect(() => {
+    if (animal) {
+      const isInFavorites = favorites.some(fav => fav.animalId === animal.id);
+      setIsFavorited(isInFavorites);
+    }
+  }, [animal, favorites]);
 
   if (!animal) {
     return (
@@ -57,7 +67,28 @@ export default function AnimalProfileScreen() {
   const handleFavorite = () => {
     console.log('handleFavorite function called!');
     triggerHapticFeedback();
-    setIsFavorited(!isFavorited);
+    
+    if (isFavorited) {
+      // 移除收藏
+      removeFromFavorites(animal.id);
+      setIsFavorited(false);
+      console.log('移除收藏：', animal.name);
+    } else {
+      // 添加收藏
+      addToFavorites({
+        animalId: animal.id,
+        animalName: animal.name,
+        animalType: animal.type.toLowerCase() as 'cat' | 'dog',
+        animalImage: animal.image,
+        animalBreed: animal.breed,
+        animalAge: animal.age,
+        shelter: animal.shelter,
+        location: animal.location,
+        personality: animal.personality,
+      });
+      setIsFavorited(true);
+      console.log('添加收藏：', animal.name);
+    }
   };
 
   const handleShare = () => {

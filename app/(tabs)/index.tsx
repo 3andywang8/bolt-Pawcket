@@ -16,7 +16,6 @@ import { Filter, Heart, MapPin } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
-import { useFavorites } from '@/contexts/FavoritesContext';
 import ANIMALS_DATA from './datas';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -27,7 +26,6 @@ const CARD_HEIGHT = screenHeight * 0.7;
 export default function ExploreScreen() {
   const router = useRouter();
   const { applications } = useAdoption();
-  const { addToFavorites } = useFavorites();
   const [currentIndex, setCurrentIndex] = useState(0);
   
   // 使用 useRef 來存儲當前索引的最新值，避免 closure 問題
@@ -126,20 +124,8 @@ export default function ExploreScreen() {
     console.log(`當前索引: ${currentIndexRef.current}, State索引: ${currentIndex}`);
 
     if (direction === 'right') {
-      // 右滑：喜歡，添加到收藏並打開動物頁面
-      console.log('執行右滑邏輯：添加收藏並導航到動物頁面');
-      
-      addToFavorites({
-        animalId: currentAnimal.id,
-        animalName: currentAnimal.name,
-        animalType: currentAnimal.type.toLowerCase() as 'cat' | 'dog',
-        animalImage: currentAnimal.image,
-        animalBreed: currentAnimal.breed,
-        animalAge: currentAnimal.age,
-        shelter: currentAnimal.shelter,
-        location: currentAnimal.location,
-        personality: currentAnimal.personality,
-      });
+      // 右滑：導航到動物個人頁面
+      console.log('執行右滑邏輯：導航到動物頁面');
       
       // 在導航前先更新索引，確保用戶返回時看到正確的下一張卡牌
       updateCurrentIndex();
@@ -171,7 +157,7 @@ export default function ExploreScreen() {
     
     console.log(`==== 滑動完成後 ====`);
     console.log(`新的索引: ${currentIndexRef.current}`);
-  }, [getCurrentAnimal, updateCurrentIndex, currentIndex, addToFavorites, router, nextCardOpacity, nextCardScale]);
+  }, [getCurrentAnimal, updateCurrentIndex, currentIndex, router, nextCardOpacity, nextCardScale]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -459,7 +445,7 @@ export default function ExploreScreen() {
           >
             <Heart size={28} color="#FFFFFF" fill="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.buttonLabel}>喜歡</Text>
+          <Text style={styles.buttonLabel}>查看</Text>
         </Animated.View>
       </Animated.View>
 

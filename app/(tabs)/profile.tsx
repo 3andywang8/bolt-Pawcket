@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -13,6 +14,7 @@ import { User, Heart, Gift, Chrome as Home, Award, Settings, ChevronRight, Bell,
 import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useDonations } from '@/contexts/DonationContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 const ProfileItem = ({
   icon: Icon,
@@ -66,6 +68,7 @@ export default function ProfileScreen() {
   const { applications } = useAdoption();
   const { favorites } = useFavorites();
   const { getTotalDonations, getTotalAmount } = useDonations();
+  const { profile } = useUserProfile();
 
   // 計算統計數據
   const totalApplications = applications.length;
@@ -89,10 +92,17 @@ export default function ProfileScreen() {
       case 'favorites':
         router.push('/FavoritesScreen');
         break;
+      case 'profile-settings':
+        router.push('/ProfileSettingsScreen');
+        break;
       default:
         console.log(`Navigation for ${item} not implemented yet`);
         break;
     }
+  };
+
+  const handleEditProfile = () => {
+    router.push('/ProfileSettingsScreen');
   };
 
   return (
@@ -113,13 +123,39 @@ export default function ProfileScreen() {
         {/* User Profile Card */}
         <View style={styles.userCard}>
           <View style={styles.avatarContainer}>
-            <User size={32} color="#F97316" strokeWidth={2} />
+            {profile.avatar ? (
+              typeof profile.avatar === 'string' && profile.avatar.startsWith('http') ? (
+                <Image 
+                  source={{ uri: profile.avatar }} 
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : typeof profile.avatar === 'string' && profile.avatar.endsWith('.png') ? (
+                <Image 
+                  source={require('../../assets/lezu.png')} 
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : typeof profile.avatar === 'number' ? (
+                <Image 
+                  source={profile.avatar} 
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.avatarEmoji}>{profile.avatar}</Text>
+              )
+            ) : (
+              <User size={32} color="#F97316" strokeWidth={2} />
+            )}
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>愛心使用者</Text>
-            <Text style={styles.userSubtitle}>已加入 Pawcket 30 天</Text>
+            <Text style={styles.userName}>{profile.nickname || '愛心使用者'}</Text>
+            <Text style={styles.userSubtitle}>
+              已加入 Pawcket {Math.ceil((new Date().getTime() - new Date(profile.joinDate).getTime()) / (1000 * 60 * 60 * 24))} 天
+            </Text>
           </View>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
             <Text style={styles.editButtonText}>編輯</Text>
           </TouchableOpacity>
         </View>
@@ -251,6 +287,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF7ED',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  avatarEmoji: {
+    fontSize: 32,
   },
   userInfo: {
     flex: 1,

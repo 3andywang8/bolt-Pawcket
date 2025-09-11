@@ -78,13 +78,15 @@ export default function FavoritesScreen() {
     donations.forEach(donation => {
       if (donation.animalName && donation.animalName !== '愛心動物') {
         // 嘗試從動物數據中找到匹配的動物
-        const matchingAnimal = animalsData.find(animal => 
-          animal.name === donation.animalName || 
-          animal.name.includes(donation.animalName) ||
-          donation.animalName.includes(animal.name)
-        );
-        if (matchingAnimal) {
-          fedAnimalIds.add(matchingAnimal.id);
+        if (donation.animalName) {
+          const matchingAnimal = animalsData.find(animal => 
+            animal.name === donation.animalName || 
+            animal.name.includes(donation.animalName!) ||
+            donation.animalName!.includes(animal.name)
+          );
+          if (matchingAnimal) {
+            fedAnimalIds.add(matchingAnimal.id);
+          }
         }
       }
     });
