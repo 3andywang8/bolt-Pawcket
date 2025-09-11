@@ -21,7 +21,8 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      "expo-video"
+      "expo-video",
+      "expo-location"
     ],
     "experiments": {
       "typedRoutes": true

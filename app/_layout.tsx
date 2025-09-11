@@ -35,6 +35,7 @@ export default function RootLayout() {
         <FavoritesProvider>
           <DonationProvider>
             <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="login" options={{ headerShown: false }} />
               <Stack.Screen name="loading" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -46,6 +47,7 @@ export default function RootLayout() {
               <Stack.Screen name="AdoptionProgressScreen" options={{ headerShown: false }} />
               <Stack.Screen name="MyDonationsScreen" options={{ headerShown: false }} />
               <Stack.Screen name="ProfileSettingsScreen" options={{ headerShown: false }} />
+              <Stack.Screen name="FavoritesScreen" options={{ headerShown: false }} />
               <Stack.Screen name="+not-found" />
             </Stack>
             <StatusBar style="auto" />
