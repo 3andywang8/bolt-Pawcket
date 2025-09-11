@@ -43,7 +43,7 @@ const PAYMENT_METHODS = [
 
 export default function PaymentScreen() {
   const router = useRouter();
-  const { treatId, treatName, price, animalType, animalName } = useLocalSearchParams();
+  const { treatId, treatName, price, animalId, animalType, animalName } = useLocalSearchParams();
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -78,6 +78,7 @@ export default function PaymentScreen() {
           treatId: treatId as string,
           treatName: treatName as string,
           price: price as string,
+          animalId: animalId as string,
           animalType: animalType as string,
           animalName: animalName as string,
           paymentMethod: selectedPayment,

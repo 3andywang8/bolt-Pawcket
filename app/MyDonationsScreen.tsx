@@ -54,8 +54,14 @@ const StatCard = ({
   </View>
 );
 
-const DonationCard = ({ donation, getTreatData }: { donation: DonationRecord; getTreatData: (treatId: string) => any }) => {
+const DonationCard = ({ donation, getTreatData, router }: { donation: DonationRecord; getTreatData: (treatId: string) => any; router: any }) => {
   const treatData = getTreatData(donation.treatId);
+
+  const handleAnimalNamePress = () => {
+    if (donation.animalId) {
+      router.push(`/animal/${donation.animalId}`);
+    }
+  };
   
   return (
     <View style={styles.donationCard}>
@@ -72,9 +78,22 @@ const DonationCard = ({ donation, getTreatData }: { donation: DonationRecord; ge
           </View>
           <View style={styles.donationInfo}>
             <Text style={styles.treatName}>{donation.treatName}</Text>
-            <Text style={styles.animalInfo}>
-              {donation.animalType === 'dog' ? '🐕' : '🐱'} {donation.animalName || '愛心動物'}
-            </Text>
+            <View style={styles.animalInfoContainer}>
+              <Text style={styles.animalIcon}>
+                {donation.animalType === 'dog' ? '🐕' : '🐱'} 
+              </Text>
+              {donation.animalId ? (
+                <TouchableOpacity onPress={handleAnimalNamePress}>
+                  <Text style={styles.animalNameClickable}>
+                    {donation.animalName || '愛心動物'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.animalNameNormal}>
+                  {donation.animalName || '愛心動物'}
+                </Text>
+              )}
+            </View>
             {donation.shelterName && (
               <Text style={styles.shelterName}>{donation.shelterName}</Text>
             )}
@@ -233,7 +252,7 @@ export default function MyDonationsScreen() {
         <View style={styles.donationsContainer}>
           {filteredDonations.length > 0 ? (
             filteredDonations.map((donation) => (
-              <DonationCard key={donation.id} donation={donation} getTreatData={getTreatData} />
+              <DonationCard key={donation.id} donation={donation} getTreatData={getTreatData} router={router} />
             ))
           ) : (
             <View style={styles.emptyContainer}>
@@ -449,10 +468,24 @@ const styles = StyleSheet.create({
     color: '#1C1917',
     marginBottom: 4,
   },
-  animalInfo: {
+  animalInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  animalIcon: {
     fontSize: 14,
     color: '#78716C',
-    marginBottom: 2,
+    marginRight: 4,
+  },
+  animalNameClickable: {
+    fontSize: 14,
+    color: '#F97316',
+    textDecorationLine: 'underline',
+  },
+  animalNameNormal: {
+    fontSize: 14,
+    color: '#78716C',
   },
   shelterName: {
     fontSize: 12,

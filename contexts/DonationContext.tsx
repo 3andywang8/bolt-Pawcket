@@ -11,6 +11,7 @@ export interface DonationRecord {
   paymentMethod: string;
   donationDate: string;
   status: 'completed' | 'pending' | 'failed';
+  animalId?: string;
   animalName?: string;
   shelterName?: string;
   transactionId?: string;
@@ -48,6 +49,7 @@ export const DonationProvider = ({ children }: { children: ReactNode }) => {
       paymentMethod: 'line-pay',
       donationDate: '2024/01/20',
       status: 'completed',
+      animalId: '417451',
       animalName: '小黃',
       shelterName: '台北市動物之家',
       transactionId: 'TXN001',
@@ -61,6 +63,7 @@ export const DonationProvider = ({ children }: { children: ReactNode }) => {
       paymentMethod: 'credit-card',
       donationDate: '2024/01/18',
       status: 'completed',
+      animalId: '417389',
       animalName: '小花',
       shelterName: '新北市動物救援中心',
       transactionId: 'TXN002',
@@ -74,6 +77,7 @@ export const DonationProvider = ({ children }: { children: ReactNode }) => {
       paymentMethod: 'apple-pay',
       donationDate: '2024/01/15',
       status: 'completed',
+      animalId: '417455',
       animalName: '黑皮',
       shelterName: '桃園市動物保護教育園區',
       transactionId: 'TXN003',
@@ -87,6 +91,7 @@ export const DonationProvider = ({ children }: { children: ReactNode }) => {
       paymentMethod: 'line-pay',
       donationDate: '2024/01/12',
       status: 'completed',
+      animalId: '417390',
       animalName: '橘貓咪',
       shelterName: '高雄市動物保護處',
       transactionId: 'TXN004',
@@ -100,6 +105,7 @@ export const DonationProvider = ({ children }: { children: ReactNode }) => {
       paymentMethod: 'apple-pay',
       donationDate: '2024/01/10',
       status: 'completed',
+      animalId: '404778',
       animalName: '小白',
       shelterName: '台中市動物之家',
       transactionId: 'TXN005',
@@ -113,6 +119,7 @@ export const DonationProvider = ({ children }: { children: ReactNode }) => {
       paymentMethod: 'credit-card',
       donationDate: '2024/01/08',
       status: 'completed',
+      animalId: '417399',
       animalName: '小咪',
       shelterName: '台南市動物之家',
       transactionId: 'TXN006',

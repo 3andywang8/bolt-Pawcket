@@ -68,9 +68,10 @@ export default function AnimalProfileScreen() {
     console.log('[DEBUG] handleDonation function called.'); // 監控點 1：確認函式被呼叫
     triggerHapticFeedback();
     
-    if (animal?.type && animal?.name) {
+    if (animal?.type && animal?.name && animal?.id) {
       const targetPath = '/TreatSelectionScreen' as any;
       const params = { 
+        animalId: animal.id,
         animalType: animal.type,
         animalName: animal.name
       };
@@ -87,8 +88,8 @@ export default function AnimalProfileScreen() {
         console.error('[DEBUG] An error occurred during router.push:', error); // 監控點 4：捕捉跳轉時的錯誤
       }
     } else {
-      console.error('[DEBUG] Navigation failed: Animal type is missing.');
-      Alert.alert('錯誤', '無法確定動物類型');
+      console.error('[DEBUG] Navigation failed: Animal info is missing.');
+      Alert.alert('錯誤', '無法確定動物資訊');
     }
   };
 

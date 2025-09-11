@@ -35,7 +35,7 @@ import { useDonations } from '@/contexts/DonationContext';
 export default function PaymentSuccessScreen() {
   const router = useRouter();
   const { addDonation } = useDonations();
-  const { treatId, treatName, price, animalType, animalName, paymentMethod } =
+  const { treatId, treatName, price, animalId, animalType, animalName, paymentMethod } =
     useLocalSearchParams();
 
   // 動態選擇影片的邏輯
@@ -120,6 +120,7 @@ export default function PaymentSuccessScreen() {
         price: typeof price === 'string' ? parseInt(price) : parseInt(Array.isArray(price) ? price[0] : price),
         animalType: animalType as 'cat' | 'dog',
         paymentMethod: paymentMethod as string,
+        animalId: animalId as string,
         animalName: displayAnimalName,
       });
     }

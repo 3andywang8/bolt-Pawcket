@@ -18,7 +18,7 @@ import { getTreatsByType } from '@/data/treats';
 
 export default function TreatSelectionScreen() {
   const router = useRouter();
-  const { animalType, animalName } = useLocalSearchParams();
+  const { animalId, animalType, animalName } = useLocalSearchParams();
   const [selectedTreat, setSelectedTreat] = useState<string | null>(null);
 
   const triggerHapticFeedback = () => {
@@ -54,6 +54,7 @@ export default function TreatSelectionScreen() {
         treatId: selectedTreat,
         treatName: treat.name,
         price: treat.price.toString(),
+        animalId: animalId as string,
         animalType: animalType as string,
         animalName: animalName as string,
       },
