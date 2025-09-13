@@ -46,7 +46,7 @@ export default function WebMapView({ center, shelters, onMarkerClick, height = '
   }
 
   return (
-    <View style={{ flex: 1, height }}>
+    <View style={{ flex: 1, height: height as any }}>
       <GoogleMap
         mapContainerStyle={{ width: '100%', height: '100%' }}
         center={mapCenter}

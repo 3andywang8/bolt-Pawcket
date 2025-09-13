@@ -129,7 +129,40 @@ export default function PaymentSuccessScreen() {
   }, []); // 只在組件載入時執行一次
 
   const handleViewDonations = () => {
-    router.push('/MyDonationsScreen');
+    console.log('handleViewDonations clicked!'); // 調試用
+    // 檢查是否已填寫捐款資訊
+    // 這裡可以根據實際的狀態管理來檢查
+    // 目前先假設未填寫，顯示提示並跳轉
+    
+    if (Platform.OS === 'web') {
+      // 網頁版使用瀏覽器原生對話框
+      const confirmed = window.confirm('請先填寫捐款資訊\n\n查看捐款紀錄前，請先完成捐款人基本資料及收據資訊填寫。\n\n點擊確定將跳轉到填寫頁面。');
+      if (confirmed) {
+        console.log('Alert confirmed, redirecting...'); // 調試用
+        // 2秒後自動跳轉到捐款資訊填寫頁面
+        setTimeout(() => {
+          router.push('/DonationInfoScreen');
+        }, 2000);
+      }
+    } else {
+      // 手機版使用 React Native Alert
+      Alert.alert(
+        '請先填寫捐款資訊',
+        '查看捐款紀錄前，請先完成捐款人基本資料及收據資訊填寫。',
+        [
+          {
+            text: '確定',
+            onPress: () => {
+              console.log('Alert confirmed, redirecting...'); // 調試用
+              // 2秒後自動跳轉到捐款資訊填寫頁面
+              setTimeout(() => {
+                router.push('/DonationInfoScreen');
+              }, 2000);
+            }
+          }
+        ]
+      );
+    }
   };
 
   const handleShare = () => {
