@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useRef, useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import Constants from 'expo-constants';
@@ -18,10 +18,21 @@ export default function WebMapView({ center, shelters, onMarkerClick, height = '
     googleMapsApiKey: apiKey as string,
   });
 
+  const mapRef = useRef<google.maps.Map | null>(null);
+  
   const mapCenter = useMemo(
     () => ({ lat: center.latitude, lng: center.longitude }),
     [center.latitude, center.longitude]
   );
+
+  // 當 center 改變時，平移地圖到新位置
+  useEffect(() => {
+    if (mapRef.current && isLoaded) {
+      console.log('地圖平移到新位置:', mapCenter);
+      mapRef.current.panTo(mapCenter);
+      mapRef.current.setZoom(13); // 設置適當的縮放級別
+    }
+  }, [mapCenter, isLoaded]);
 
   const handleClick = useCallback(
     (shelter: ShelterLocation) => () => onMarkerClick?.(shelter),
@@ -52,6 +63,10 @@ export default function WebMapView({ center, shelters, onMarkerClick, height = '
         center={mapCenter}
         zoom={11}
         options={{ disableDefaultUI: false }}
+        onLoad={(map) => {
+          mapRef.current = map;
+          console.log('地圖已載入');
+        }}
       >
         {shelters.map((s, i) => (
           <Marker

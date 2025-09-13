@@ -51,13 +51,21 @@ export default function AdoptScreen() {
     ageGroup: 'all',
     size: 'all',
     urgent: false,
+    personality: [],
+    gender: [],
+    health: [],
   });
   const [allShelterLocations, setAllShelterLocations] = useState<
     ShelterLocation[]
   >([]);
+  // 新北市新店區中央路159號的座標
+  const defaultLocation = {
+    latitude: 24.9677, 
+    longitude: 121.5373,
+  };
+
   const [mapRegion, setMapRegion] = useState({
-    latitude: 25.033, // 台灣台北預設座標
-    longitude: 121.5654,
+    ...defaultLocation,
     latitudeDelta: 0.5,
     longitudeDelta: 0.5,
   });
@@ -66,26 +74,13 @@ export default function AdoptScreen() {
     setLoading(true);
 
     try {
-      if (Platform.OS !== 'web') {
-        // 請求定位權限
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('定位權限', '需要定位權限來顯示附近的收容所');
-        } else {
-          // 取得使用者位置
-          const location = await Location.getCurrentPositionAsync({});
-          const userCoords = {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          };
-          setUserLocation(userCoords);
-          setMapRegion({
-            ...userCoords,
-            latitudeDelta: 0.5,
-            longitudeDelta: 0.5,
-          });
-        }
-      }
+      // 使用預設位置：新北市新店區中央路159號
+      setUserLocation(defaultLocation);
+      setMapRegion({
+        ...defaultLocation,
+        latitudeDelta: 0.5,
+        longitudeDelta: 0.5,
+      });
 
       // 過濾已完成領養的寵物
       const completedAdoptionIds = applications
@@ -176,6 +171,27 @@ export default function AdoptScreen() {
 
         // 緊急狀態篩選
         if (filters.urgent && !animal.isUrgent) return false;
+
+        // 性格特質篩選
+        if (filters.personality.length > 0) {
+          const hasMatchingPersonality = animal.personality?.some((trait: string) => 
+            filters.personality.includes(trait)
+          );
+          if (!hasMatchingPersonality) return false;
+        }
+
+        // 性別篩選
+        if (filters.gender.length > 0) {
+          if (!filters.gender.includes(animal.gender)) return false;
+        }
+
+        // 健康狀態篩選
+        if (filters.health.length > 0) {
+          const hasMatchingHealth = animal.health?.some((condition: string) => 
+            filters.health.includes(condition)
+          );
+          if (!hasMatchingHealth) return false;
+        }
 
         return true;
       });
@@ -276,14 +292,19 @@ export default function AdoptScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerButton}
-            onPress={() =>
+            onPress={() => {
+              console.log('定位按鈕被點擊');
+              console.log('userLocation:', userLocation);
+              console.log('defaultLocation:', defaultLocation);
+              const targetLocation = userLocation || defaultLocation;
+              console.log('目標位置:', targetLocation);
               setMapRegion({
-                ...mapRegion,
-                ...(userLocation || { latitude: 25.033, longitude: 121.5654 }),
+                latitude: targetLocation.latitude,
+                longitude: targetLocation.longitude,
                 latitudeDelta: 0.1,
                 longitudeDelta: 0.1,
-              })
-            }
+              });
+            }}
           >
             <MapPin size={20} color="#F97316" />
           </TouchableOpacity>

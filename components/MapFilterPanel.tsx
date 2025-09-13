@@ -6,13 +6,16 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { Filter, X } from 'lucide-react-native';
+import { Filter, X, Check } from 'lucide-react-native';
 
 export interface FilterOptions {
   animalType: 'all' | 'cat' | 'dog';
   ageGroup: 'all' | 'young' | 'adult' | 'senior';
   size: 'all' | 'small' | 'medium' | 'large';
   urgent: boolean;
+  personality: string[];
+  gender: string[];
+  health: string[];
 }
 
 interface MapFilterPanelProps {
@@ -37,12 +40,36 @@ export const MapFilterPanel: React.FC<MapFilterPanelProps> = ({
     onFiltersChange({ ...filters, [key]: value });
   };
 
+  const toggleArrayFilter = (
+    key: 'personality' | 'gender' | 'health',
+    value: string
+  ) => {
+    const currentValues = filters[key];
+    const isSelected = currentValues.includes(value);
+    
+    const newValues = isSelected
+      ? currentValues.filter(item => item !== value)
+      : [...currentValues, value];
+    
+    onFiltersChange({ ...filters, [key]: newValues });
+  };
+
+  // 篩選選項常數
+  const filterOptions = {
+    personality: ['親人', '活潑', '溫和', '獨立', '愛玩', '安靜', '黏人', '膽小', '好奇', '聰明'],
+    gender: ['男生', '女生'],
+    health: ['健康良好', '已絕育', '未絕育', '已施打疫苗', '需要特殊照顧', '有慢性病']
+  };
+
   const clearAllFilters = () => {
     onFiltersChange({
       animalType: 'all',
       ageGroup: 'all',
       size: 'all',
       urgent: false,
+      personality: [],
+      gender: [],
+      health: [],
     });
   };
 
@@ -50,7 +77,10 @@ export const MapFilterPanel: React.FC<MapFilterPanelProps> = ({
     filters.animalType !== 'all' ||
     filters.ageGroup !== 'all' ||
     filters.size !== 'all' ||
-    filters.urgent;
+    filters.urgent ||
+    filters.personality.length > 0 ||
+    filters.gender.length > 0 ||
+    filters.health.length > 0;
 
   return (
     <View style={styles.overlay}>
@@ -186,6 +216,87 @@ export const MapFilterPanel: React.FC<MapFilterPanelProps> = ({
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* 性格特質 */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>性格特質</Text>
+            <View style={styles.tagContainer}>
+              {filterOptions.personality.map((trait) => (
+                <TouchableOpacity
+                  key={trait}
+                  style={[
+                    styles.tagButton,
+                    filters.personality.includes(trait) && styles.tagButtonSelected
+                  ]}
+                  onPress={() => toggleArrayFilter('personality', trait)}
+                >
+                  <Text style={[
+                    styles.tagText,
+                    filters.personality.includes(trait) && styles.tagTextSelected
+                  ]}>
+                    {trait}
+                  </Text>
+                  {filters.personality.includes(trait) && (
+                    <Check size={14} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* 性別 */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>性別</Text>
+            <View style={styles.tagContainer}>
+              {filterOptions.gender.map((gender) => (
+                <TouchableOpacity
+                  key={gender}
+                  style={[
+                    styles.tagButton,
+                    filters.gender.includes(gender) && styles.tagButtonSelected
+                  ]}
+                  onPress={() => toggleArrayFilter('gender', gender)}
+                >
+                  <Text style={[
+                    styles.tagText,
+                    filters.gender.includes(gender) && styles.tagTextSelected
+                  ]}>
+                    {gender}
+                  </Text>
+                  {filters.gender.includes(gender) && (
+                    <Check size={14} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* 健康狀態 */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>健康狀態</Text>
+            <View style={styles.tagContainer}>
+              {filterOptions.health.map((condition) => (
+                <TouchableOpacity
+                  key={condition}
+                  style={[
+                    styles.tagButton,
+                    filters.health.includes(condition) && styles.tagButtonSelected
+                  ]}
+                  onPress={() => toggleArrayFilter('health', condition)}
+                >
+                  <Text style={[
+                    styles.tagText,
+                    filters.health.includes(condition) && styles.tagTextSelected
+                  ]}>
+                    {condition}
+                  </Text>
+                  {filters.health.includes(condition) && (
+                    <Check size={14} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </ScrollView>
 
         {/* Footer */}
@@ -304,23 +415,24 @@ const styles = StyleSheet.create({
   urgentButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
     backgroundColor: '#F5F5F4',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: 'transparent',
+    alignSelf: 'flex-start',
   },
   urgentButtonActive: {
     backgroundColor: '#FEF3F2',
     borderColor: '#EF4444',
   },
   urgentEmoji: {
-    fontSize: 16,
-    marginRight: 8,
+    fontSize: 14,
+    marginRight: 6,
   },
   urgentText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: '#78716C',
   },
@@ -357,6 +469,34 @@ const styles = StyleSheet.create({
   applyButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  // New tag styles for personality, gender, health filters
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    backgroundColor: '#FFFFFF',
+    gap: 4,
+  },
+  tagButtonSelected: {
+    backgroundColor: '#F97316',
+    borderColor: '#F97316',
+  },
+  tagText: {
+    fontSize: 14,
+    color: '#78716C',
+  },
+  tagTextSelected: {
     color: '#FFFFFF',
   },
 });
