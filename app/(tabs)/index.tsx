@@ -10,9 +10,11 @@ import {
   Image,
   StatusBar,
   Platform,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Filter, Heart, MapPin } from 'lucide-react-native';
+import { Filter, Heart, MapPin, X, Check } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useAdoption, ApplicationStatus } from '@/contexts/AdoptionContext';
@@ -23,15 +25,40 @@ const CARD_WIDTH = screenWidth * 0.9;
 const CARD_HEIGHT = screenHeight * 0.7;
 
 // Mock animal data
+// 篩選選項
+type FilterOptions = {
+  personality: string[];
+  gender: string[];
+  type: string[];
+  health: string[];
+};
+
 export default function ExploreScreen() {
   const router = useRouter();
   const { applications } = useAdoption();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  
+  // 篩選狀態
+  const [filters, setFilters] = useState<FilterOptions>({
+    personality: [],
+    gender: [],
+    type: [],
+    health: [],
+  });
   
   // 使用 useRef 來存儲當前索引的最新值，避免 closure 問題
   const currentIndexRef = useRef(0);
   
-  // 過濾已完成領養的寵物，然後隨機排序
+  // 篩選選項常數
+  const filterOptions = {
+    personality: ['親人', '活潑', '溫和', '獨立', '愛玩', '安靜', '黏人', '膽小', '好奇', '聰明'],
+    gender: ['男生', '女生'],
+    type: ['cat', 'dog'],
+    health: ['健康良好', '已絕育', '未絕育', '已施打疫苗', '需要特殊照顧', '有慢性病']
+  };
+
+  // 過濾已完成領養的寵物，然後根據篩選條件過濾，最後隨機排序
   const animals = React.useMemo(() => {
     // 取得已完成領養的寵物ID
     const completedAdoptionIds = applications
@@ -39,9 +66,34 @@ export default function ExploreScreen() {
       .map(app => app.animalId);
     
     // 過濾出已完成領養的寵物
-    const availableAnimals = ANIMALS_DATA.filter(animal => 
+    let availableAnimals = ANIMALS_DATA.filter(animal => 
       !completedAdoptionIds.includes(animal.id)
     );
+    
+    // 根據篩選條件過濾
+    if (filters.personality.length > 0) {
+      availableAnimals = availableAnimals.filter(animal =>
+        animal.personality.some(trait => filters.personality.includes(trait))
+      );
+    }
+    
+    if (filters.gender.length > 0) {
+      availableAnimals = availableAnimals.filter(animal =>
+        filters.gender.includes(animal.gender)
+      );
+    }
+    
+    if (filters.type.length > 0) {
+      availableAnimals = availableAnimals.filter(animal =>
+        filters.type.includes(animal.type)
+      );
+    }
+    
+    if (filters.health.length > 0) {
+      availableAnimals = availableAnimals.filter(animal =>
+        animal.health.some(condition => filters.health.includes(condition))
+      );
+    }
     
     // 隨機排序
     const copy = [...availableAnimals];
@@ -50,7 +102,7 @@ export default function ExploreScreen() {
       [copy[i], copy[j]] = [copy[j], copy[i]];
     }
     return copy;
-  }, [applications]);
+  }, [applications, filters]);
   
   // 同步更新索引的函數，確保 state 和 ref 保持一致
   const updateCurrentIndex = useCallback(() => {
@@ -82,6 +134,42 @@ export default function ExploreScreen() {
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
+  };
+
+  // 篩選功能函數
+  const toggleFilter = (category: keyof FilterOptions, value: string) => {
+    setFilters(prev => {
+      const currentValues = prev[category];
+      const isSelected = currentValues.includes(value);
+      
+      return {
+        ...prev,
+        [category]: isSelected 
+          ? currentValues.filter(item => item !== value)
+          : [...currentValues, value]
+      };
+    });
+  };
+
+  const clearAllFilters = () => {
+    setFilters({
+      personality: [],
+      gender: [],
+      type: [],
+      health: [],
+    });
+    setCurrentIndex(0);
+    currentIndexRef.current = 0;
+  };
+
+  const applyFilters = () => {
+    setShowFilterModal(false);
+    setCurrentIndex(0);
+    currentIndexRef.current = 0;
+  };
+
+  const getTypeDisplayName = (type: string) => {
+    return type === 'cat' ? '貓咪' : '狗狗';
   };
 
   const resetPosition = () => {
@@ -362,7 +450,10 @@ export default function ExploreScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>發現新朋友</Text>
-        <TouchableOpacity style={styles.filterButton}>
+        <TouchableOpacity 
+          style={styles.filterButton}
+          onPress={() => setShowFilterModal(true)}
+        >
           <Filter size={24} color="#F97316" />
         </TouchableOpacity>
       </View>
@@ -453,6 +544,152 @@ export default function ExploreScreen() {
       <Text style={styles.instructionText}>
         左滑祝福 · 右滑喜歡 · 點擊查看詳情
       </Text>
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilterModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.filterModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>篩選條件</Text>
+              <TouchableOpacity
+                onPress={() => setShowFilterModal(false)}
+                style={styles.closeButton}
+              >
+                <X size={24} color="#78716C" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              {/* Personality Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>性格特質</Text>
+                <View style={styles.filterOptions}>
+                  {filterOptions.personality.map((trait) => (
+                    <TouchableOpacity
+                      key={trait}
+                      style={[
+                        styles.filterOption,
+                        filters.personality.includes(trait) && styles.filterOptionSelected
+                      ]}
+                      onPress={() => toggleFilter('personality', trait)}
+                    >
+                      <Text style={[
+                        styles.filterOptionText,
+                        filters.personality.includes(trait) && styles.filterOptionTextSelected
+                      ]}>
+                        {trait}
+                      </Text>
+                      {filters.personality.includes(trait) && (
+                        <Check size={16} color="#FFFFFF" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Gender Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>性別</Text>
+                <View style={styles.filterOptions}>
+                  {filterOptions.gender.map((gender) => (
+                    <TouchableOpacity
+                      key={gender}
+                      style={[
+                        styles.filterOption,
+                        filters.gender.includes(gender) && styles.filterOptionSelected
+                      ]}
+                      onPress={() => toggleFilter('gender', gender)}
+                    >
+                      <Text style={[
+                        styles.filterOptionText,
+                        filters.gender.includes(gender) && styles.filterOptionTextSelected
+                      ]}>
+                        {gender}
+                      </Text>
+                      {filters.gender.includes(gender) && (
+                        <Check size={16} color="#FFFFFF" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Type Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>動物類型</Text>
+                <View style={styles.filterOptions}>
+                  {filterOptions.type.map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.filterOption,
+                        filters.type.includes(type) && styles.filterOptionSelected
+                      ]}
+                      onPress={() => toggleFilter('type', type)}
+                    >
+                      <Text style={[
+                        styles.filterOptionText,
+                        filters.type.includes(type) && styles.filterOptionTextSelected
+                      ]}>
+                        {getTypeDisplayName(type)}
+                      </Text>
+                      {filters.type.includes(type) && (
+                        <Check size={16} color="#FFFFFF" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Health Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>健康狀態</Text>
+                <View style={styles.filterOptions}>
+                  {filterOptions.health.map((condition) => (
+                    <TouchableOpacity
+                      key={condition}
+                      style={[
+                        styles.filterOption,
+                        filters.health.includes(condition) && styles.filterOptionSelected
+                      ]}
+                      onPress={() => toggleFilter('health', condition)}
+                    >
+                      <Text style={[
+                        styles.filterOptionText,
+                        filters.health.includes(condition) && styles.filterOptionTextSelected
+                      ]}>
+                        {condition}
+                      </Text>
+                      {filters.health.includes(condition) && (
+                        <Check size={16} color="#FFFFFF" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={clearAllFilters}
+              >
+                <Text style={styles.clearButtonText}>清除全部</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={applyFilters}
+              >
+                <Text style={styles.applyButtonText}>套用篩選</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -654,5 +891,104 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#78716C',
     paddingBottom: 20,
+  },
+  // Filter Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  filterModal: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F4',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1C1917',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  filterSection: {
+    marginBottom: 24,
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1917',
+    marginBottom: 12,
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    backgroundColor: '#FFFFFF',
+    gap: 4,
+  },
+  filterOptionSelected: {
+    backgroundColor: '#F97316',
+    borderColor: '#F97316',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    color: '#78716C',
+  },
+  filterOptionTextSelected: {
+    color: '#FFFFFF',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F4',
+  },
+  clearButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F4',
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#78716C',
+  },
+  applyButton: {
+    flex: 2,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#F97316',
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
