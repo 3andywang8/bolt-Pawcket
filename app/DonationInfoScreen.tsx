@@ -640,20 +640,28 @@ export default function DonationInfoScreen() {
     triggerHapticFeedback();
     
     if (!validateForm()) {
-      Alert.alert('填寫不完整', '請檢查並填寫所有必填欄位');
+      if (Platform.OS === 'web') {
+        window.alert('填寫不完整\n請檢查並填寫所有必填欄位');
+      } else {
+        Alert.alert('填寫不完整', '請檢查並填寫所有必填欄位');
+      }
       return;
     }
     
     // 這裡可以加入實際的提交邏輯
-    // 顯示成功提示並自動跳轉
-    Alert.alert(
-      '資料提交成功',
-      '您的捐款資訊已成功提交，我們會盡快處理。'
-    );
+    // 顯示成功提示並自動跳轉到我的捐款頁面
+    if (Platform.OS === 'web') {
+      window.alert('資料提交成功\n您的捐款資訊已成功提交，我們會盡快處理。');
+    } else {
+      Alert.alert(
+        '資料提交成功',
+        '您的捐款資訊已成功提交，我們會盡快處理。'
+      );
+    }
     
-    // 2秒後自動返回投餵成功頁面
+    // 2秒後自動跳轉到我的捐款頁面
     setTimeout(() => {
-      router.back();
+      router.push('/MyDonationsScreen');
     }, 2000);
   };
 
