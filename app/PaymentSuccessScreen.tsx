@@ -24,6 +24,7 @@ import {
   AtSign,
   Send,
   History,
+  Edit3,
 } from 'lucide-react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as Haptics from 'expo-haptics';
@@ -462,9 +463,9 @@ export default function PaymentSuccessScreen() {
 
         {/* 底部按鈕 */}
         <View style={styles.bottomActions}>
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-            <Share2 size={20} color="#F97316" strokeWidth={2} />
-            <Text style={styles.shareButtonText}>分享愛心</Text>
+          <TouchableOpacity style={styles.shareButton} onPress={() => router.push('/DonationInfoScreen')}>
+            <Edit3 size={20} color="#F97316" strokeWidth={2} />
+            <Text style={styles.shareButtonText}>填寫捐款資訊</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.donationButton} onPress={handleViewDonations}>
@@ -782,7 +783,7 @@ const styles = StyleSheet.create({
     color: '#F97316',
   },
   donationButton: {
-    flex: 2,
+    flex: 1,
     backgroundColor: '#F97316',
     flexDirection: 'row',
     alignItems: 'center',
