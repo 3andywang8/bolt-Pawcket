@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ export default function AdoptionProcessScreen() {
   const router = useRouter();
   const { animalId, animalName, animalType, animalShelter, animalShelterPhone } = useLocalSearchParams();
   const { addApplication } = useAdoption();
+  const scrollViewRef = useRef<ScrollView>(null);
   
   const [currentStep, setCurrentStep] = useState<AdoptionStep>(AdoptionStep.GUIDELINES);
   const [formData, setFormData] = useState({
@@ -139,6 +140,13 @@ export default function AdoptionProcessScreen() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // 當步驟改變時，滾動到頂部
+  useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: true });
+    }
+  }, [currentStep]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FEFDFB" />
@@ -149,8 +157,8 @@ export default function AdoptionProcessScreen() {
           <ArrowLeft size={24} color="#1C1917" strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {currentStep === AdoptionStep.GUIDELINES && '領養須知'}
-          {currentStep === AdoptionStep.FORM && '領養申請'}
+          {currentStep === AdoptionStep.GUIDELINES && '預約互動/領養須知'}
+          {currentStep === AdoptionStep.FORM && '預約互動/領養申請'}
           {currentStep === AdoptionStep.SUBMITTED && '申請已提交'}
           {currentStep === AdoptionStep.SUCCESS && '預約成功'}
         </Text>
@@ -176,7 +184,7 @@ export default function AdoptionProcessScreen() {
         </Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false}>
         {currentStep === AdoptionStep.GUIDELINES && (
           <GuidelinesStep animalName={animalName as string} animalType={animalType as string} />
         )}
@@ -237,6 +245,50 @@ const GuidelinesStep = ({ animalName, animalType }: { animalName: string; animal
       </View>
 
       <View style={styles.guidelinesSection}>
+        <Text style={styles.sectionTitle}>預約互動注意事項</Text>
+        
+        <View style={styles.guidelineItem}>
+          <CheckCircle size={20} color="#3B82F6" />
+          <View style={styles.guidelineContent}>
+            <Text style={styles.guidelineTitle}>預約目的</Text>
+            <Text style={styles.guidelineText}>
+              預約現場互動是為了讓您與{animalTypeText}相處，觀察彼此是否適合，再決定是否正式領養
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.guidelineItem}>
+          <CheckCircle size={20} color="#3B82F6" />
+          <View style={styles.guidelineContent}>
+            <Text style={styles.guidelineTitle}>互動時間</Text>
+            <Text style={styles.guidelineText}>
+              每次互動時間約 30-60 分鐘，請放鬆心情，讓 {animalName} 自然地接近您
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.guidelineItem}>
+          <CheckCircle size={20} color="#3B82F6" />
+          <View style={styles.guidelineContent}>
+            <Text style={styles.guidelineTitle}>服裝建議</Text>
+            <Text style={styles.guidelineText}>
+              建議穿著舒適、便於清潔的衣物，避免過於鮮豔或有強烈氣味的服裝
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.guidelineItem}>
+          <CheckCircle size={20} color="#3B82F6" />
+          <View style={styles.guidelineContent}>
+            <Text style={styles.guidelineTitle}>互動準備</Text>
+            <Text style={styles.guidelineText}>
+              請攜帶身分證件，如有其他寵物，建議告知工作人員以便安排適當的見面方式
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.guidelinesSection}>
         <Text style={styles.sectionTitle}>領養前須知</Text>
         
         <View style={styles.guidelineItem}>
@@ -291,10 +343,9 @@ const GuidelinesStep = ({ animalName, animalType }: { animalName: string; animal
       </View>
 
       <View style={styles.responsibilitySection}>
-        <Text style={styles.responsibilityTitle}>領養責任聲明</Text>
+        <Text style={styles.responsibilityTitle}>貼心提醒</Text>
         <Text style={styles.responsibilityText}>
-          我承諾將以愛心、耐心照顧 {animalName}，提供適當的居住環境、營養飲食、醫療照護，
-          並承諾不棄養、不轉讓，讓 {animalName} 在愛的環境中度過幸福的一生。
+          現場互動完後可直接領養帶回家，但需自備籠子或提籠。建議先準備好基本用品如飼料碗、水碗、貓砂盆（貓咪）或狗繩（狗狗）等，讓 {animalName} 能快速適應新家環境。
         </Text>
       </View>
     </View>
@@ -359,7 +410,7 @@ const FormStep = ({
 
   return (
     <View style={styles.stepContainer}>
-      <Text style={styles.formTitle}>領養申請表單</Text>
+      <Text style={styles.formTitle}>申請表單</Text>
       <Text style={styles.formSubtitle}>請填寫以下資訊，我們將為您安排與 {animalName} 的見面</Text>
 
       {/* 基本資料 */}
@@ -480,10 +531,10 @@ const FormStep = ({
 
       {/* 預約時間 */}
       <View style={styles.formSection}>
-        <Text style={styles.formSectionTitle}>預約參訪時間</Text>
+        <Text style={styles.formSectionTitle}>預約互動時間</Text>
         
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>希望參訪日期 *</Text>
+          <Text style={styles.inputLabel}>期望日期 *</Text>
           <TouchableOpacity
             style={styles.dateInput}
             onPress={showDatePickerModal}
@@ -533,7 +584,7 @@ const FormStep = ({
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>希望參訪時間 *</Text>
+          <Text style={styles.inputLabel}>期望時間 *</Text>
           <View style={styles.timeSlots}>
             {['上午 9:00-12:00', '下午 14:00-17:00', '假日 10:00-16:00'].map((time) => (
               <TouchableOpacity

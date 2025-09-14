@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Heart, Share2, MapPin, Clock, Gift, Chrome as Home, Phone, MessageCircle, CheckCircle, AlertCircle, X } from 'lucide-react-native';
+import { ArrowLeft, Heart, Share2, MapPin, Clock, Gift, Calendar, Phone, CalendarDays, CheckCircle, AlertCircle, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 import ANIMALS_DATA from '../(tabs)/datas';
@@ -388,8 +388,8 @@ export default function AnimalProfileScreen() {
               <TouchableOpacity
                 style={styles.adoptButton}
                 onPress={handleAdoptionInquiry}>
-                <Home size={20} color="#FFFFFF" strokeWidth={2} />
-                <Text style={styles.adoptButtonText}>我想了解領養</Text>
+                <Calendar size={20} color="#FFFFFF" strokeWidth={2} />
+                <Text style={styles.adoptButtonText}>我想預約互動</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -484,8 +484,8 @@ export default function AnimalProfileScreen() {
             </>
           ) : (
             <>
-              <MessageCircle size={20} color="#FFFFFF" strokeWidth={2} />
-              <Text style={styles.bottomButtonText}>諮詢領養</Text>
+              <CalendarDays size={20} color="#FFFFFF" strokeWidth={2} />
+              <Text style={styles.bottomButtonText}>預約現場互動</Text>
             </>
           )}
         </TouchableOpacity>
